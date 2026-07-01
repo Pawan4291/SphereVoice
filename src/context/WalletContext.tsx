@@ -354,6 +354,9 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // Keep ref updated
   executeRef.current = executeScheduledPayment;
+  React.useEffect(() => {
+    connectWallet();
+  }, []);
 
   const cancelScheduled = useCallback((id: string) => {
     setScheduledPayments(prev => prev.map(p => p.id === id ? { ...p, status: 'cancelled' } : p));
