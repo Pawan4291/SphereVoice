@@ -34,26 +34,28 @@ const TAB_COMPONENTS: Record<TabId, React.ReactElement> = {
 };
 
 function WalletStatusBar() {
-  const { status, nametag, directAddress } = useWallet();
+  const { status, nametag, directAddress, connectWallet } = useWallet();
+  const [connecting, setConnecting] = useState(false);
+  const handleConnect = async () => { setConnecting(true); try { await connectWallet(); } finally { setConnecting(false); } };
+
   return (
-    <div className="flex items-center gap-2">
-      <motion.div
-        animate={{ scale: status === 'connecting' ? [1, 1.2, 1] : 1 }}
-        transition={{ duration: 1, repeat: status === 'connecting' ? Infinity : 0 }}
-        className={`w-2 h-2 rounded-full ${
-          status === 'connected' ? 'bg-green-400' :
-          status === 'connecting' ? 'bg-yellow-400' :
-          status === 'error' ? 'bg-red-400' :
-          'bg-gray-600'
-        }`}
-      />
-      <span className="text-xs text-gray-500 hidden sm:block font-mono">
-        {status === 'connected'
-          ? nametag ? `@${nametag}` : (directAddress ? directAddress.slice(0, 16) + '…' : 'Connected')
-          : status === 'connecting' ? 'Connecting…'
-          : status === 'error' ? 'Error'
-          : 'Disconnected'}
-      </span>
+    <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
+        <motion.div animate={{ scale: status === 'connecting' ? [1, 1.2, 1] : 1 }}
+          transition={{ duration: 1, repeat: status === 'connecting' ? Infinity : 0 }}
+          className={`w-2 h-2 rounded-full ${status === 'connected' ? 'bg-green-400' : status === 'connecting' ? 'bg-yellow-400' : status === 'error' ? 'bg-red-400' : 'bg-gray-600'}`} />
+        <span className="text-xs text-gray-500 hidden sm:block font-mono">
+          {status === 'connected' ? (nametag ? `@${nametag}` : directAddress ? directAddress.slice(0,16)+'…' : 'Connected')
+            : status === 'connecting' ? 'Connecting…' : status === 'error' ? 'Error' : 'Disconnected'}
+        </span>
+      </div>
+      {status !== 'connected' && (
+        <button onClick={handleConnect} disabled={connecting || status === 'connecting'}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-500/20 border border-orange-500/30 rounded-lg text-xs text-orange-400 hover:bg-orange-500/30 transition-all disabled:opacity-50">
+          <Wallet className="w-3.5 h-3.5" />
+          {connecting || status === 'connecting' ? 'Connecting…' : 'Connect Wallet'}
+        </button>
+      )}
     </div>
   );
 }

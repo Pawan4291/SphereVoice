@@ -73,8 +73,6 @@ export const useWallet = () => {
   return ctx;
 };
 
-const ORACLE_API_KEY = import.meta.env.VITE_ORACLE_API_KEY;
-
 function generateId() {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
@@ -103,47 +101,8 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setAstridLog(prev => [full, ...prev].slice(0, 100));
   }, []);
 
- const connectWallet = useCallback(async () => {
-    setStatus('connecting');
-    setError(null);
-    try {
-      const { connect } = await import('@unicitylabs/sphere-sdk/connect') as any;
-      const sp = await connect();
-
-      sphereRef.current = sp;
-
-      // Listen for events
-      try {
-        sp.on('nametag:recovered', (event: any) => {
-          setNametag(event?.data?.nametag ?? null);
-        });
-        sp.on('identity:changed', (event: any) => {
-          setDirectAddress(event?.data?.directAddress ?? null);
-          setNametag(event?.data?.nametag ?? null);
-        });
-      } catch (_) { /* events might not be supported */ }
-
-      const identity = sp.identity;
-      setDirectAddress(identity?.directAddress ?? identity?.address ?? null);
-      setNametag(identity?.nametag ?? null);
-      setSphere(sp);
-      setStatus('connected');
-
-      // Auto-fetch balance after connect
-      try {
-        const a = await sp.payments.getAssets();
-        setAssets(a ?? []);
-      } catch (_) { /* balance fetch is best-effort */ }
-
-    } catch (err: any) {
-      setStatus('error');
-      setError(err?.message ?? 'Failed to connect wallet');
-      console.error('Wallet connect error:', err);
-    }
-  }, []);
-
   const disconnectWallet = useCallback(() => {
-    try { sphereRef.current?.destroy?.(); } catch (_) {}
+    try { sphereRef.current?.disconnect?.(); } catch (_) {}
     sphereRef.current = null;
     setSphere(null);
     setStatus('disconnected');
@@ -155,17 +114,54 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setError(null);
   }, []);
 
+  const connectWallet = useCallback(async () => {
+    setStatus('connecting');
+    setError(null);
+    try {
+      const { autoConnect } = await import('@unicitylabs/sphere-sdk/connect/browser');
+      const { SPHERE_NETWORKS } = await import('@unicitylabs/sphere-sdk/connect');
+
+      const { client, connection } = await autoConnect({
+        dapp: { name: 'SphereVoice', url: window.location.origin },
+        walletUrl: 'https://sphere.unicity.network',
+        network: SPHERE_NETWORKS.testnet2,
+      });
+
+      sphereRef.current = client;
+
+      client.on('identity:changed', (data: any) => {
+        setDirectAddress(data?.directAddress ?? null);
+        setNametag(data?.nametag ?? null);
+      });
+      client.on('wallet:locked', () => disconnectWallet());
+
+      setDirectAddress(connection.identity?.directAddress ?? null);
+      setNametag(connection.identity?.nametag ?? null);
+      setSphere(client);
+      setStatus('connected');
+
+      try {
+        const a = await client.query('sphere_getAssets');
+        setAssets((a as any) ?? []);
+      } catch (_) { /* balance fetch is best-effort */ }
+
+    } catch (err: any) {
+      setStatus('error');
+      setError(err?.message ?? 'Failed to connect wallet');
+      console.error('Wallet connect error:', err);
+    }
+  }, [disconnectWallet]);
+
   const refreshBalance = useCallback(async () => {
     if (!sphereRef.current) throw new Error('Wallet not connected');
-    const a = await sphereRef.current.payments.getAssets();
-    setAssets(a ?? []);
+    const a = await sphereRef.current.query('sphere_getAssets');
+    setAssets((a as any) ?? []);
   }, []);
 
   const refreshHistory = useCallback(async () => {
     if (!sphereRef.current) throw new Error('Wallet not connected');
     try {
-      // Try receive() to get recent transfers
-      const result = await sphereRef.current.payments.receive();
+      const result: any = await sphereRef.current.query('sphere_getHistory');
       const rawHistory: TransferRecord[] = ((result?.transfers ?? result ?? [])).map((t: any) => ({
         id: t.id ?? generateId(),
         type: 'received' as const,
@@ -185,7 +181,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const sendPayment = useCallback(async (recipient: string, amount: string, coinId: string, memo?: string) => {
     if (!sphereRef.current) throw new Error('Wallet not connected');
-    const result = await sphereRef.current.payments.send({
+    const result: any = await sphereRef.current.intent('send', {
       recipient,
       amount,
       coinId,
@@ -216,8 +212,11 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         const resolved = getCoinIdBySymbol?.(coinId);
         if (resolved) hexId = resolved;
       } catch (_) {}
-      
-      const result = await sphereRef.current.payments.mintFungibleToken(hexId, amount);
+
+      const result: any = await sphereRef.current.intent('mint', {
+        coinId: hexId,
+        amount: amount.toString(),
+      });
       if (result?.success !== false) {
         await refreshBalance();
         const record: TransferRecord = {
@@ -240,21 +239,10 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   }, [refreshBalance]);
 
-  const registerNametag = useCallback(async (name: string) => {
-    if (!sphereRef.current) throw new Error('Wallet not connected');
-    try {
-      let available = true;
-      try {
-        available = await sphereRef.current.isNametagAvailable(name);
-      } catch (_) {}
-      if (!available) return { success: false, error: `@${name} is already taken` };
-      await sphereRef.current.registerNametag(name);
-      const identity = sphereRef.current.identity;
-      setNametag(identity?.nametag ?? name);
-      return { success: true };
-    } catch (err: any) {
-      return { success: false, error: err?.message ?? 'Failed to register nametag' };
-    }
+  const registerNametag = useCallback(async (_name: string) => {
+    // Not supported over the Sphere Connect protocol — nametag registration
+    // must be done inside the wallet app itself, not from a connected dApp.
+    return { success: false, error: 'Register a nametag directly in your Sphere wallet — not available from a connected dApp.' };
   }, []);
 
   const schedulePayment = useCallback(async (to: string, amount: string, coinId: string, due_at: number) => {
@@ -288,7 +276,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     try {
       let sufficient = true;
       try {
-        const assetList = await sphereRef.current.payments.getAssets();
+        const assetList: any = await sphereRef.current.query('sphere_getAssets');
         const asset = (assetList ?? []).find((a: any) =>
           a.symbol === payment.coinId || a.coinId === payment.coinId
         );
@@ -310,9 +298,9 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }
 
       addAstridLog({ type: 'approval', message: `Policy OK. Authorizing autonomous payment to ${payment.to}`, paymentId: payment.id });
-      addAstridLog({ type: 'sent', message: `Calling sphere.payments.send() → ${payment.to} ${payment.amount} ${payment.coinId}`, paymentId: payment.id });
+      addAstridLog({ type: 'sent', message: `Calling sphere Connect intent 'send' → ${payment.to} ${payment.amount} ${payment.coinId}`, paymentId: payment.id });
 
-      const result = await sphereRef.current.payments.send({
+      const result: any = await sphereRef.current.intent('send', {
         recipient: payment.to,
         amount: payment.amount,
         coinId: payment.coinId,
