@@ -114,7 +114,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setError(null);
   }, []);
 
-  const connectWallet = useCallback(async () => {
+  const connectWallet = useCallback(async (silentOnly = false) => {
     setStatus('connecting');
     setError(null);
     try {
@@ -129,7 +129,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             dapp: { name: 'SphereVoice', url: window.location.origin },
             walletUrl: 'https://sphere.unicity.network',
             network: SPHERE_NETWORKS.testnet2,
-            silent: true,
+           silent: silentOnly,
             permissions: [
               'identity:read',
               'balance:read',
@@ -355,7 +355,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // Keep ref updated
   executeRef.current = executeScheduledPayment;
   React.useEffect(() => {
-    connectWallet();
+    connectWallet(true).catch(() => setStatus('disconnected'));
   }, []);
 
   const cancelScheduled = useCallback((id: string) => {
