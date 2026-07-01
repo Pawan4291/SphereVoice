@@ -122,10 +122,17 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       const { SPHERE_NETWORKS } = await import('@unicitylabs/sphere-sdk/connect');
 
       const { client, connection } = await autoConnect({
-        dapp: { name: 'SphereVoice', url: window.location.origin },
-        walletUrl: 'https://sphere.unicity.network',
-        network: SPHERE_NETWORKS.testnet2,
-      });
+  dapp: { name: 'SphereVoice', url: window.location.origin },
+  walletUrl: 'https://sphere.unicity.network',
+  network: SPHERE_NETWORKS.testnet2,
+  permissions: [
+    'identity:read',
+    'balance:read',
+    'history:read',
+    'transfer:request',
+    'mint:request',
+  ],
+});
 
       sphereRef.current = client;
 

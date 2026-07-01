@@ -34,20 +34,36 @@ const TAB_COMPONENTS: Record<TabId, React.ReactElement> = {
 };
 
 function WalletStatusBar() {
-  const { status, nametag, directAddress, connectWallet } = useWallet();
+  const { status, nametag, directAddress, connectWallet, disconnectWallet } = useWallet();
   const [connecting, setConnecting] = useState(false);
+  const [hover, setHover] = useState(false);
   const handleConnect = async () => { setConnecting(true); try { await connectWallet(); } finally { setConnecting(false); } };
 
   return (
     <div className="flex items-center gap-3">
-      <div className="flex items-center gap-2">
+      <div
+        className="relative flex items-center gap-2"
+        onMouseEnter={() => setHover(true)}
+        onMouseLeave={() => setHover(false)}
+      >
         <motion.div animate={{ scale: status === 'connecting' ? [1, 1.2, 1] : 1 }}
           transition={{ duration: 1, repeat: status === 'connecting' ? Infinity : 0 }}
           className={`w-2 h-2 rounded-full ${status === 'connected' ? 'bg-green-400' : status === 'connecting' ? 'bg-yellow-400' : status === 'error' ? 'bg-red-400' : 'bg-gray-600'}`} />
-        <span className="text-xs text-gray-500 hidden sm:block font-mono">
+        <span className="text-xs text-gray-500 hidden sm:block font-mono cursor-default">
           {status === 'connected' ? (nametag ? `@${nametag}` : directAddress ? directAddress.slice(0,16)+'…' : 'Connected')
             : status === 'connecting' ? 'Connecting…' : status === 'error' ? 'Error' : 'Disconnected'}
         </span>
+
+        {status === 'connected' && hover && (
+          <motion.button
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            onClick={disconnectWallet}
+            className="absolute top-full right-0 mt-2 whitespace-nowrap px-3 py-1.5 bg-red-500/20 border border-red-500/30 rounded-lg text-xs text-red-400 hover:bg-red-500/30 transition-all z-50"
+          >
+            Disconnect
+          </motion.button>
+        )}
       </div>
       {status !== 'connected' && (
         <button onClick={handleConnect} disabled={connecting || status === 'connecting'}
