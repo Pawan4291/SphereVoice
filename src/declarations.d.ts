@@ -125,3 +125,6 @@ declare module '@unicitylabs/sphere-sdk' {
   export const DEFAULT_NOSTR_RELAYS: readonly string[];
   export class CoinGeckoPriceProvider { constructor(config?: any): void; }
 }
+declare module '@unicitylabs/sphere-sdk/connect' {
+  export function connect(options?: any): Promise<any>;
+}

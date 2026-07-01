@@ -103,29 +103,14 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setAstridLog(prev => [full, ...prev].slice(0, 100));
   }, []);
 
-  const connectWallet = useCallback(async () => {
+ const connectWallet = useCallback(async () => {
     setStatus('connecting');
     setError(null);
     try {
-      // Dynamic import to avoid SSR issues
-      const { createBrowserProviders } = await import('@unicitylabs/sphere-sdk/impl/browser');
-      const { Sphere } = await import('@unicitylabs/sphere-sdk');
-
-      const providers = createBrowserProviders({
-        network: 'testnet',
-        oracle: { apiKey: ORACLE_API_KEY },
-      });
-
-      const { sphere: sp, created, generatedMnemonic: mnemonic } = await Sphere.init({
-        ...providers,
-        autoGenerate: true,
-      });
+      const { connect } = await import('@unicitylabs/sphere-sdk/connect') as any;
+      const sp = await connect();
 
       sphereRef.current = sp;
-
-      if (created && mnemonic) {
-        setGeneratedMnemonic(mnemonic);
-      }
 
       // Listen for events
       try {
