@@ -1,0 +1,399 @@
+import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
+
+export type WalletStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
+
+export interface Asset {
+  coinId: string;
+  symbol: string;
+  totalAmount: bigint | string;
+  decimals?: number;
+}
+
+export interface TransferRecord {
+  id: string;
+  type: 'sent' | 'received' | 'mint';
+  amount: string;
+  coinId: string;
+  symbol?: string;
+  counterpart?: string;
+  timestamp: number;
+  status: string;
+  txId?: string;
+}
+
+export interface ScheduledPayment {
+  id: string;
+  to: string;
+  amount: string;
+  coinId: string;
+  due_at: number;
+  status: 'pending' | 'executed' | 'cancelled' | 'failed';
+  created_at: number;
+}
+
+export interface AstridLogEntry {
+  id: string;
+  timestamp: number;
+  type: 'budget_check' | 'approval' | 'sent' | 'confirmed' | 'error' | 'info';
+  message: string;
+  txId?: string;
+  smtLink?: string;
+  paymentId?: string;
+}
+
+interface WalletContextValue {
+  sphere: any | null;
+  status: WalletStatus;
+  error: string | null;
+  nametag: string | null;
+  directAddress: string | null;
+  generatedMnemonic: string | null;
+  assets: Asset[];
+  transfers: TransferRecord[];
+  scheduledPayments: ScheduledPayment[];
+  astridLog: AstridLogEntry[];
+  connectWallet: () => Promise<void>;
+  disconnectWallet: () => void;
+  refreshBalance: () => Promise<void>;
+  refreshHistory: () => Promise<void>;
+  sendPayment: (recipient: string, amount: string, coinId: string, memo?: string) => Promise<{ status: string; txId?: string }>;
+  mintTokens: (coinId: string, amount: bigint) => Promise<{ success: boolean; tokenId?: string; error?: string }>;
+  registerNametag: (name: string) => Promise<{ success: boolean; error?: string }>;
+  schedulePayment: (to: string, amount: string, coinId: string, due_at: number) => Promise<void>;
+  cancelScheduled: (id: string) => void;
+  addAstridLog: (entry: Omit<AstridLogEntry, 'id' | 'timestamp'>) => void;
+  clearMnemonic: () => void;
+}
+
+const WalletContext = createContext<WalletContextValue | null>(null);
+
+export const useWallet = () => {
+  const ctx = useContext(WalletContext);
+  if (!ctx) throw new Error('useWallet must be used within WalletProvider');
+  return ctx;
+};
+
+const ORACLE_API_KEY = import.meta.env.VITE_ORACLE_API_KEY;
+
+function generateId() {
+  return Math.random().toString(36).slice(2) + Date.now().toString(36);
+}
+
+export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [sphere, setSphere] = useState<any | null>(null);
+  const [status, setStatus] = useState<WalletStatus>('disconnected');
+  const [error, setError] = useState<string | null>(null);
+  const [nametag, setNametag] = useState<string | null>(null);
+  const [directAddress, setDirectAddress] = useState<string | null>(null);
+  const [generatedMnemonic, setGeneratedMnemonic] = useState<string | null>(null);
+  const [assets, setAssets] = useState<Asset[]>([]);
+  const [transfers, setTransfers] = useState<TransferRecord[]>([]);
+  const [scheduledPayments, setScheduledPayments] = useState<ScheduledPayment[]>([]);
+  const [astridLog, setAstridLog] = useState<AstridLogEntry[]>([]);
+  const sphereRef = useRef<any>(null);
+  // keep executeScheduledPayment stable across renders
+  const executeRef = useRef<((p: ScheduledPayment) => Promise<void>) | undefined>(undefined);
+
+  const addAstridLog = useCallback((entry: Omit<AstridLogEntry, 'id' | 'timestamp'>) => {
+    const full: AstridLogEntry = {
+      ...entry,
+      id: generateId(),
+      timestamp: Date.now(),
+    };
+    setAstridLog(prev => [full, ...prev].slice(0, 100));
+  }, []);
+
+  const connectWallet = useCallback(async () => {
+    setStatus('connecting');
+    setError(null);
+    try {
+      // Dynamic import to avoid SSR issues
+      const { createBrowserProviders } = await import('@unicitylabs/sphere-sdk/impl/browser');
+      const { Sphere } = await import('@unicitylabs/sphere-sdk');
+
+      const providers = createBrowserProviders({
+        network: 'testnet',
+        oracle: { apiKey: ORACLE_API_KEY },
+      });
+
+      const { sphere: sp, created, generatedMnemonic: mnemonic } = await Sphere.init({
+        ...providers,
+        autoGenerate: true,
+      });
+
+      sphereRef.current = sp;
+
+      if (created && mnemonic) {
+        setGeneratedMnemonic(mnemonic);
+      }
+
+      // Listen for events
+      try {
+        sp.on('nametag:recovered', (event: any) => {
+          setNametag(event?.data?.nametag ?? null);
+        });
+        sp.on('identity:changed', (event: any) => {
+          setDirectAddress(event?.data?.directAddress ?? null);
+          setNametag(event?.data?.nametag ?? null);
+        });
+      } catch (_) { /* events might not be supported */ }
+
+      const identity = sp.identity;
+      setDirectAddress(identity?.directAddress ?? identity?.address ?? null);
+      setNametag(identity?.nametag ?? null);
+      setSphere(sp);
+      setStatus('connected');
+
+      // Auto-fetch balance after connect
+      try {
+        const a = await sp.payments.getAssets();
+        setAssets(a ?? []);
+      } catch (_) { /* balance fetch is best-effort */ }
+
+    } catch (err: any) {
+      setStatus('error');
+      setError(err?.message ?? 'Failed to connect wallet');
+      console.error('Wallet connect error:', err);
+    }
+  }, []);
+
+  const disconnectWallet = useCallback(() => {
+    try { sphereRef.current?.destroy?.(); } catch (_) {}
+    sphereRef.current = null;
+    setSphere(null);
+    setStatus('disconnected');
+    setNametag(null);
+    setDirectAddress(null);
+    setGeneratedMnemonic(null);
+    setAssets([]);
+    setTransfers([]);
+    setError(null);
+  }, []);
+
+  const refreshBalance = useCallback(async () => {
+    if (!sphereRef.current) throw new Error('Wallet not connected');
+    const a = await sphereRef.current.payments.getAssets();
+    setAssets(a ?? []);
+  }, []);
+
+  const refreshHistory = useCallback(async () => {
+    if (!sphereRef.current) throw new Error('Wallet not connected');
+    try {
+      // Try receive() to get recent transfers
+      const result = await sphereRef.current.payments.receive();
+      const rawHistory: TransferRecord[] = ((result?.transfers ?? result ?? [])).map((t: any) => ({
+        id: t.id ?? generateId(),
+        type: 'received' as const,
+        amount: t.amount?.toString() ?? '0',
+        coinId: t.coinId ?? 'UCT',
+        symbol: t.symbol ?? 'UCT',
+        counterpart: t.senderNametag ?? t.sender ?? 'Unknown',
+        timestamp: t.timestamp ?? Date.now(),
+        status: t.status ?? 'confirmed',
+        txId: t.transferId ?? t.id,
+      }));
+      if (rawHistory.length > 0) {
+        setTransfers(rawHistory);
+      }
+    } catch (_) { /* history not available */ }
+  }, []);
+
+  const sendPayment = useCallback(async (recipient: string, amount: string, coinId: string, memo?: string) => {
+    if (!sphereRef.current) throw new Error('Wallet not connected');
+    const result = await sphereRef.current.payments.send({
+      recipient,
+      amount,
+      coinId,
+      memo,
+    });
+    try { await refreshBalance(); } catch (_) {}
+    const record: TransferRecord = {
+      id: generateId(),
+      type: 'sent',
+      amount,
+      coinId,
+      symbol: coinId,
+      counterpart: recipient,
+      timestamp: Date.now(),
+      status: result?.status ?? 'completed',
+      txId: result?.transferId ?? result?.id,
+    };
+    setTransfers(prev => [record, ...prev]);
+    return { status: result?.status ?? 'completed', txId: record.txId };
+  }, [refreshBalance]);
+
+  const mintTokens = useCallback(async (coinId: string, amount: bigint) => {
+    if (!sphereRef.current) throw new Error('Wallet not connected');
+    try {
+      let hexId = coinId;
+      try {
+        const { getCoinIdBySymbol } = await import('@unicitylabs/sphere-sdk');
+        const resolved = getCoinIdBySymbol?.(coinId);
+        if (resolved) hexId = resolved;
+      } catch (_) {}
+      
+      const result = await sphereRef.current.payments.mintFungibleToken(hexId, amount);
+      if (result?.success !== false) {
+        await refreshBalance();
+        const record: TransferRecord = {
+          id: generateId(),
+          type: 'mint',
+          amount: amount.toString(),
+          coinId,
+          symbol: coinId,
+          timestamp: Date.now(),
+          status: 'confirmed',
+          txId: result?.tokenId ?? result?.id,
+        };
+        setTransfers(prev => [record, ...prev]);
+        return { success: true, tokenId: result?.tokenId ?? result?.id };
+      } else {
+        return { success: false, error: result?.error ?? 'Mint failed' };
+      }
+    } catch (err: any) {
+      return { success: false, error: err?.message ?? 'Mint failed' };
+    }
+  }, [refreshBalance]);
+
+  const registerNametag = useCallback(async (name: string) => {
+    if (!sphereRef.current) throw new Error('Wallet not connected');
+    try {
+      let available = true;
+      try {
+        available = await sphereRef.current.isNametagAvailable(name);
+      } catch (_) {}
+      if (!available) return { success: false, error: `@${name} is already taken` };
+      await sphereRef.current.registerNametag(name);
+      const identity = sphereRef.current.identity;
+      setNametag(identity?.nametag ?? name);
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err?.message ?? 'Failed to register nametag' };
+    }
+  }, []);
+
+  const schedulePayment = useCallback(async (to: string, amount: string, coinId: string, due_at: number) => {
+    const payment: ScheduledPayment = {
+      id: generateId(),
+      to,
+      amount,
+      coinId,
+      due_at,
+      status: 'pending',
+      created_at: Date.now(),
+    };
+    setScheduledPayments(prev => [...prev, payment]);
+    // If due immediately
+    if (due_at <= Date.now() + 5000) {
+      setTimeout(() => executeRef.current?.(payment), 1000);
+    }
+  }, []);
+
+  // Execute a scheduled payment — defined with useCallback and stored in ref for stability
+  const executeScheduledPayment = useCallback(async (payment: ScheduledPayment) => {
+    addAstridLog({ type: 'info', message: `Astrid woke up for payment ${payment.id.slice(0, 8)}…`, paymentId: payment.id });
+    addAstridLog({ type: 'budget_check', message: `Checking budget: need ${payment.amount} ${payment.coinId}`, paymentId: payment.id });
+
+    if (!sphereRef.current) {
+      addAstridLog({ type: 'error', message: 'Wallet not connected — execution aborted', paymentId: payment.id });
+      setScheduledPayments(prev => prev.map(p => p.id === payment.id ? { ...p, status: 'failed' } : p));
+      return;
+    }
+
+    try {
+      let sufficient = true;
+      try {
+        const assetList = await sphereRef.current.payments.getAssets();
+        const asset = (assetList ?? []).find((a: any) =>
+          a.symbol === payment.coinId || a.coinId === payment.coinId
+        );
+        const balance = asset ? BigInt(asset.totalAmount?.toString() ?? '0') : 0n;
+        const needed = BigInt(payment.amount);
+        sufficient = balance >= needed;
+        if (!sufficient) {
+          addAstridLog({ type: 'error', message: `Insufficient balance: have ${balance}, need ${needed}`, paymentId: payment.id });
+        } else {
+          addAstridLog({ type: 'budget_check', message: `Balance OK: ${balance} ${payment.coinId} available`, paymentId: payment.id });
+        }
+      } catch (_) {
+        addAstridLog({ type: 'budget_check', message: 'Could not verify balance, proceeding anyway…', paymentId: payment.id });
+      }
+
+      if (!sufficient) {
+        setScheduledPayments(prev => prev.map(p => p.id === payment.id ? { ...p, status: 'failed' } : p));
+        return;
+      }
+
+      addAstridLog({ type: 'approval', message: `Policy OK. Authorizing autonomous payment to ${payment.to}`, paymentId: payment.id });
+      addAstridLog({ type: 'sent', message: `Calling sphere.payments.send() → ${payment.to} ${payment.amount} ${payment.coinId}`, paymentId: payment.id });
+
+      const result = await sphereRef.current.payments.send({
+        recipient: payment.to,
+        amount: payment.amount,
+        coinId: payment.coinId,
+      });
+
+      const txId = result?.transferId ?? result?.id ?? generateId();
+      const smtLink = `https://unicitynetwork.github.io/smt-explorer/?tx=${txId}`;
+
+      addAstridLog({ type: 'confirmed', message: `✓ Payment confirmed! status=${result?.status ?? 'completed'}`, txId, smtLink, paymentId: payment.id });
+      setScheduledPayments(prev => prev.map(p => p.id === payment.id ? { ...p, status: 'executed' } : p));
+
+      const record: TransferRecord = {
+        id: generateId(),
+        type: 'sent',
+        amount: payment.amount,
+        coinId: payment.coinId,
+        counterpart: payment.to,
+        timestamp: Date.now(),
+        status: result?.status ?? 'completed',
+        txId,
+      };
+      setTransfers(prev => [record, ...prev]);
+      try { await refreshBalance(); } catch (_) {}
+
+    } catch (err: any) {
+      addAstridLog({ type: 'error', message: `Execution failed: ${err?.message ?? 'Unknown error'}`, paymentId: payment.id });
+      setScheduledPayments(prev => prev.map(p => p.id === payment.id ? { ...p, status: 'failed' } : p));
+    }
+  }, [addAstridLog, refreshBalance]);
+
+  // Keep ref updated
+  executeRef.current = executeScheduledPayment;
+
+  const cancelScheduled = useCallback((id: string) => {
+    setScheduledPayments(prev => prev.map(p => p.id === id ? { ...p, status: 'cancelled' } : p));
+  }, []);
+
+  const clearMnemonic = useCallback(() => {
+    setGeneratedMnemonic(null);
+  }, []);
+
+  // Cron-like scheduler: check every 30s
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      setScheduledPayments(prev => {
+        const now = Date.now();
+        prev.forEach(p => {
+          if (p.status === 'pending' && p.due_at <= now) {
+            setTimeout(() => executeRef.current?.(p), 100);
+          }
+        });
+        return prev;
+      });
+    }, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <WalletContext.Provider value={{
+      sphere, status, error, nametag, directAddress, generatedMnemonic,
+      assets, transfers, scheduledPayments, astridLog,
+      connectWallet, disconnectWallet, refreshBalance, refreshHistory,
+      sendPayment, mintTokens, registerNametag, schedulePayment,
+      cancelScheduled, addAstridLog, clearMnemonic,
+    }}>
+      {children}
+    </WalletContext.Provider>
+  );
+};
