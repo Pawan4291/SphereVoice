@@ -127,4 +127,24 @@ declare module '@unicitylabs/sphere-sdk' {
 }
 declare module '@unicitylabs/sphere-sdk/connect' {
   export function connect(options?: any): Promise<any>;
+  export const SPHERE_NETWORKS: { testnet2: { id: number; name: string } };
+  export interface ConnectClient {
+    on(event: string, cb: (data: any) => void): void;
+    off(event: string, cb: (data: any) => void): void;
+    query(method: string, params?: any): Promise<any>;
+    intent(action: string, params: any): Promise<any>;
+    disconnect(): Promise<void>;
+  }
+  export interface ConnectResult {
+    identity?: { directAddress?: string; nametag?: string; chainPubkey?: string };
+    sessionId?: string;
+    permissions?: string[];
+  }
+}
+declare module '@unicitylabs/sphere-sdk/connect/browser' {
+  import type { ConnectClient, ConnectResult } from '@unicitylabs/sphere-sdk/connect';
+  export function autoConnect(options: any): Promise<{ client: ConnectClient; connection: ConnectResult }>;
+  export function isInIframe(): boolean;
+  export function hasExtension(): Promise<boolean>;
+  export function detectTransport(): 'iframe' | 'extension' | 'popup';
 }

@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-   "@unicitylabs/sphere-sdk": "^0.11.0",
+    "@unicitylabs/sphere-sdk": "^0.11.0",
     "clsx": "2.1.1",
     "framer-motion": "^12.42.2",
     "lucide-react": "^1.23.0",
@@ -20,7 +20,7 @@
   },
   "devDependencies": {
     "@tailwindcss/vite": "4.1.17",
-    "@types/node": "22.19.17",
+    "@types/node": "^22.19.17",
     "@types/react": "19.2.7",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "5.1.1",

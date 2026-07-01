@@ -1,4 +1,6 @@
-export default async function handler(req, res) {
+
+export default async function handler(req: any, res: any) {
+    
   const { text } = req.body;
   const resp = await fetch('https://api.deepseek.com/v1/chat/completions', {
     method: 'POST',

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
-
+import type { ConnectClient, ConnectResult } from '@unicitylabs/sphere-sdk/connect';
 export type WalletStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
 
 export interface Asset {
@@ -121,18 +121,31 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       const { autoConnect } = await import('@unicitylabs/sphere-sdk/connect/browser');
       const { SPHERE_NETWORKS } = await import('@unicitylabs/sphere-sdk/connect');
 
-      const { client, connection } = await autoConnect({
-  dapp: { name: 'SphereVoice', url: window.location.origin },
-  walletUrl: 'https://sphere.unicity.network',
-  network: SPHERE_NETWORKS.testnet2,
-  permissions: [
-    'identity:read',
-    'balance:read',
-    'history:read',
-    'transfer:request',
-    'mint:request',
-  ],
-});
+      let client!: ConnectClient;
+      let connection!: ConnectResult;
+      for (let i = 0; i < 3; i++) {
+        try {
+          const res = await autoConnect({
+            dapp: { name: 'SphereVoice', url: window.location.origin },
+            walletUrl: 'https://sphere.unicity.network',
+            network: SPHERE_NETWORKS.testnet2,
+            silent: true,
+            permissions: [
+              'identity:read',
+              'balance:read',
+              'history:read',
+              'transfer:request',
+              'mint:request',
+            ],
+          });
+          client = res.client;
+          connection = res.connection;
+          break;
+        } catch (e) {
+          if (i === 2) throw e;
+          await new Promise(r => setTimeout(r, 1000 * (i + 1)));
+        }
+      }
 
       sphereRef.current = client;
 
@@ -154,8 +167,9 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     } catch (err: any) {
       setStatus('error');
-      setError(err?.message ?? 'Failed to connect wallet');
-      console.error('Wallet connect error:', err);
+      const code = err?.code;
+      setError(code ? `Connect failed (${code}): ${err.message}` : err?.message ?? 'Failed to connect wallet');
+      console.error('Wallet connect error:', code, err);
     }
   }, [disconnectWallet]);
 
