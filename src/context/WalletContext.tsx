@@ -184,17 +184,17 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   if (!sphereRef.current) throw new Error('Wallet not connected');
   const result: any = await sphereRef.current.query('sphere_getHistory');
   console.log('RAW HISTORY:', JSON.stringify(result, null, 2));
-  const rawHistory: TransferRecord[] = ((result?.transfers ?? result ?? [])).map((t: any) => ({
-    id: t.id ?? generateId(),
-    type: 'received' as const,
-    amount: t.amount?.toString() ?? '0',
-    coinId: t.coinId ?? 'UCT',
-    symbol: t.symbol ?? 'UCT',
-    counterpart: t.senderNametag ?? t.sender ?? 'Unknown',
-    timestamp: t.timestamp ?? Date.now(),
-    status: t.status ?? 'confirmed',
-    txId: t.transferId ?? t.id,
-  }));
+ const rawHistory: TransferRecord[] = ((result?.transfers ?? result ?? [])).map((t: any) => ({
+  id: t.id ?? generateId(),
+  type: t.type === 'SENT' ? 'sent' : t.type === 'RECEIVED' ? 'received' : 'mint',
+  amount: t.amount?.toString() ?? '0',
+  coinId: t.coinId ?? 'UCT',
+  symbol: t.symbol ?? 'UCT',
+  counterpart: t.type === 'SENT' ? (t.recipientNametag ?? 'Unknown') : (t.senderNametag ?? 'Unknown'),
+  timestamp: t.timestamp ?? Date.now(),
+  status: t.status ?? 'confirmed',
+  txId: t.transferId ?? t.id,
+}));
   if (rawHistory.length > 0) setTransfers(rawHistory);
   return rawHistory;
 }, []);

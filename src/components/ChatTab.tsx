@@ -12,7 +12,7 @@ interface Message {
   data?: any;
 }
 
-function formatAmount(amount: string, symbol: string = 'UCT', decimals: number = 6): string {
+function formatAmount(amount: string, symbol: string = 'UCT', decimals: number = 18): string {
   const n = BigInt(amount);
   const divisor = 10n ** BigInt(decimals);
   const whole = n / divisor;
