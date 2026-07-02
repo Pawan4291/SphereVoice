@@ -167,7 +167,7 @@ export default function ChatTab() {
           break;
         }
 
-        case 'send': {
+       case 'send': {
           if (!cmd.to || !cmd.amount) {
             responseContent = '❌ Please specify both recipient and amount. Example: *"Send 5 UCT to @alice"*';
             responseStatus = 'error';
@@ -176,9 +176,10 @@ export default function ChatTab() {
           try {
             const sendAsset = assets.find((a: any) => a.symbol === (cmd.coinId ?? 'UCT') || a.coinId === (cmd.coinId ?? 'UCT'));
             const sendDecimals = sendAsset?.decimals ?? 6;
-            appendMsg({ role: 'assistant', content: `🔄 Sending ${formatAmount(cmd.amount, cmd.coinId ?? 'UCT', sendDecimals)} to **${cmd.to}**…`, status: 'pending' });
-            const result = await sendPayment(cmd.to, cmd.amount, cmd.coinId ?? 'UCT');
-            responseContent = `✅ **Payment Sent!**\nRecipient: ${cmd.to}\nAmount: ${formatAmount(cmd.amount, cmd.coinId ?? 'UCT', sendDecimals)}\nStatus: ${result.status}${result.txId ? `\nTx: \`${result.txId.slice(0, 20)}…\`` : ''}`;
+            const baseAmount = Math.round(parseFloat(cmd.amount) * (10 ** sendDecimals)).toString();
+            appendMsg({ role: 'assistant', content: `🔄 Sending ${formatAmount(baseAmount, cmd.coinId ?? 'UCT', sendDecimals)} to **${cmd.to}**…`, status: 'pending' });
+            const result = await sendPayment(cmd.to, baseAmount, cmd.coinId ?? 'UCT');
+            responseContent = `✅ **Payment Sent!**\nRecipient: ${cmd.to}\nAmount: ${formatAmount(baseAmount, cmd.coinId ?? 'UCT', sendDecimals)}\nStatus: ${result.status}${result.txId ? `\nTx: \`${result.txId.slice(0, 20)}…\`` : ''}`;
           } catch (err: any) {
             responseContent = `❌ Send failed: ${err.message}`;
             responseStatus = 'error';
