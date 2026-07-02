@@ -143,7 +143,8 @@ const updateMsg = (id: string, patch: Partial<Message>) => {
       const cmd = await parseWithDeepSeek(userText);
       let responseContent = '';
       let responseStatus: Message['status'] = 'success';
-
+      
+if (cmd.action === 'send' && cmd.schedule) cmd.action = 'schedule';
       switch (cmd.action) {
         case 'balance': {
           try {
