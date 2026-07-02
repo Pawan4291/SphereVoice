@@ -131,12 +131,13 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             network: SPHERE_NETWORKS.testnet2,
            silent: silentOnly,
             permissions: [
-              'identity:read',
-              'balance:read',
-              'history:read',
-              'transfer:request',
-              'mint:request',
-            ],
+  'identity:read',
+  'balance:read',
+  'history:read',
+  'transfer:request',
+  'mint:request',
+  'resolve:peer',
+],
           });
           client = res.client;
           connection = res.connection;

@@ -6,10 +6,11 @@ import { useWallet } from '../context/WalletContext';
 function formatAmount(raw: string, symbol = 'UCT'): string {
   try {
     const n = BigInt(raw);
-    const whole = n / 1_000_000n;
-    const frac = n % 1_000_000n;
+    const DECIMALS = 1_000_000_000_000n; // 12 decimals
+    const whole = n / DECIMALS;
+    const frac = n % DECIMALS;
     if (frac === 0n) return `${whole.toLocaleString()} ${symbol}`;
-    return `${whole.toLocaleString()}.${frac.toString().padStart(6, '0').replace(/0+$/, '')} ${symbol}`;
+    return `${whole.toLocaleString()}.${frac.toString().padStart(12, '0').replace(/0+$/, '')} ${symbol}`;
   } catch {
     return `${raw} ${symbol}`;
   }
