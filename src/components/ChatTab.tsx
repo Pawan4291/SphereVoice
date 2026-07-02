@@ -143,7 +143,7 @@ const updateMsg = (id: string, patch: Partial<Message>) => {
       const cmd = await parseWithDeepSeek(userText);
       let responseContent = '';
       let responseStatus: Message['status'] = 'success';
-      
+
 if (cmd.action === 'send' && cmd.schedule) cmd.action = 'schedule';
       switch (cmd.action) {
         case 'balance': {
@@ -225,16 +225,19 @@ if (result.success) {
           break;
         }
 
-        case 'schedule': {
+       case 'schedule': {
           if (!cmd.to || !cmd.amount) {
             responseContent = '❌ Specify recipient and amount. Example: *"Schedule 10 UCT to @bob in 5 minutes"*';
             responseStatus = 'error';
             break;
           }
+          const schedAsset = assets.find((a: any) => a.symbol?.toUpperCase() === (cmd.coinId ?? 'UCT').toUpperCase() || a.coinId === (cmd.coinId ?? 'UCT'));
+          const schedDecimals = schedAsset?.decimals ?? 18;
+          const baseAmount = Math.round(parseFloat(cmd.amount) * (10 ** schedDecimals)).toString();
           const due = parseScheduleDate(cmd.schedule ?? 'in 5 minutes');
-          await schedulePayment(cmd.to, cmd.amount, cmd.coinId ?? 'UCT', due);
+          await schedulePayment(cmd.to, baseAmount, cmd.coinId ?? 'UCT', due);
           const timeStr = new Date(due).toLocaleTimeString();
-          responseContent = `🗓️ **Scheduled!**\nRecipient: ${cmd.to}\nAmount: ${formatAmount(cmd.amount, cmd.coinId ?? 'UCT')}\nScheduled for: **${timeStr}**\n\nAstrid will execute this automatically. Watch the *Watch Astrid Work* tab!`;
+          responseContent = `🗓️ **Scheduled!**\nRecipient: ${cmd.to}\nAmount: ${formatAmount(baseAmount, cmd.coinId ?? 'UCT', schedDecimals)}\nScheduled for: **${timeStr}**\n\nAstrid will execute this automatically. Watch the *Watch Astrid Work* tab!`;
           break;
         }
 

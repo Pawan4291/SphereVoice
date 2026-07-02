@@ -51,9 +51,6 @@ export default function BalanceTab() {
     }
   };
 
-  const totalTokens = assets.reduce((acc, a) => {
-    try { return acc + BigInt(a.totalAmount?.toString() ?? '0'); } catch { return acc; }
-  }, 0n);
 
   if (status !== 'connected') {
     return (
@@ -113,9 +110,9 @@ export default function BalanceTab() {
         <div className="relative">
           <p className="text-sm text-gray-500 mb-1">Total Portfolio</p>
           <p className="text-4xl font-bold text-white font-mono">
-            {assets.length === 0 ? '—' : formatAmount(totalTokens)}
+            {assets.length}
           </p>
-          <p className="text-sm text-orange-400 mt-1">UCT equivalent • Unicity Testnet</p>
+          <p className="text-sm text-orange-400 mt-1">Assets held • Unicity Testnet</p>
           <div className="flex items-center gap-1.5 mt-3">
             <motion.div
               animate={{ scale: [1, 1.2, 1] }}
@@ -141,7 +138,7 @@ export default function BalanceTab() {
             </motion.div>
           ) : (
             assets.map((asset, i) => {
-              const amt = formatAmount(asset.totalAmount?.toString() ?? '0');
+              const amt = formatAmount(asset.totalAmount?.toString() ?? '0', asset.decimals ?? 18);
               return (
                 <motion.div
                   key={asset.coinId ?? i}
