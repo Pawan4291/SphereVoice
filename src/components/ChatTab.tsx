@@ -12,16 +12,6 @@ interface Message {
   data?: any;
 }
 
-const DEEPSEEK_SYSTEM_PROMPT = `You are a Unicity Sphere wallet assistant. Parse user commands and return ONLY valid JSON, no prose.
-Supported actions: balance, history, send, schedule, mint, nametag, help.
-JSON schema: {"action": string, "amount": string|null, "to": string|null, "coinId": string|null, "schedule": string|null, "nametag": string|null}
-For "send": extract recipient (@name or address), amount as decimal string, coinId (default "UCT").
-For "schedule": extract ISO timestamp or human date in "schedule" field.
-For "mint": extract amount and coinId.
-For "nametag": extract the desired name in "nametag" field.
-For "help", "balance", "history": just set action accordingly.
-Always return ONLY the JSON object. No markdown, no explanation.`;
-
 function formatAmount(amount: string, symbol: string = 'UCT'): string {
   const n = BigInt(amount);
   const whole = n / 1_000_000n;
@@ -39,7 +29,12 @@ async function parseWithDeepSeek(text: string): Promise<any> {
   if (!resp.ok) return localParse(text);
   const json = await resp.json();
   const raw = json.choices?.[0]?.message?.content ?? '{}';
-  try { return JSON.parse(raw.trim()); } catch { return localParse(text); }
+  try {
+    const cleaned = raw.trim().replace(/^```json\s*/i, '').replace(/^```\s*/, '').replace(/```\s*$/, '');
+    return JSON.parse(cleaned.trim());
+  } catch {
+    return localParse(text);
+  }
 }
 
 function localParse(text: string): any {
@@ -83,7 +78,6 @@ function parseScheduleDate(schedule: string): number {
   if (!schedule) return Date.now();
   const d = new Date(schedule);
   if (!isNaN(d.getTime())) return d.getTime();
-  // relative: "in 5 minutes", "in 1 hour"
   const relMatch = schedule.match(/in\s+(\d+)\s+(minute|hour|day)/i);
   if (relMatch) {
     const n = parseInt(relMatch[1]);
@@ -290,7 +284,6 @@ export default function ChatTab() {
               transition={{ duration: 0.3 }}
               className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
             >
-              {/* Avatar */}
               <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
                 msg.role === 'user'
                   ? 'bg-orange-500/20 border border-orange-500/40'
@@ -301,7 +294,6 @@ export default function ChatTab() {
                   : <Bot className="w-4 h-4 text-orange-500" />}
               </div>
 
-              {/* Bubble */}
               <div className={`max-w-[80%] ${msg.role === 'user' ? 'items-end' : 'items-start'} flex flex-col gap-1`}>
                 <div className={`px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
                   msg.role === 'user'
@@ -349,7 +341,6 @@ export default function ChatTab() {
         <div ref={bottomRef} />
       </div>
 
-      {/* Suggestions */}
       {messages.length <= 2 && (
         <div className="px-4 pb-2 flex flex-wrap gap-2">
           {suggestions.map((s) => (
@@ -364,7 +355,6 @@ export default function ChatTab() {
         </div>
       )}
 
-      {/* Input */}
       <div className="p-4 border-t border-orange-500/10">
         <div className="flex gap-2 items-end">
           <div className="flex-1 relative">
@@ -395,9 +385,7 @@ export default function ChatTab() {
         </div>
         <p className="text-xs text-gray-700 mt-2 flex items-center gap-1">
           <Zap className="w-3 h-3 text-orange-600" />
-          {true
-            ? 'Powered by DeepSeek AI → Sphere SDK → Unicity Testnet'
-            : 'Local parser active (set VITE_DEEPSEEK_API_KEY for AI parsing) → Sphere SDK → Unicity Testnet'}
+          Powered by DeepSeek AI → Sphere SDK → Unicity Testnet
         </p>
       </div>
     </div>
