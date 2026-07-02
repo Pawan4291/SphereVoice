@@ -160,7 +160,7 @@ React.useEffect(() => {
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-orange-500/20 border border-orange-500/30 flex items-center justify-center overflow-hidden">
                       <img
-                        src={`https://cryptologos.cc/logos/${(asset.symbol ?? '').toLowerCase()}-${(asset.symbol ?? '').toLowerCase()}-logo.png`}
+                        src={`https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/32/color/${(asset.symbol ?? '').toLowerCase()}.png`}
                         onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden'); }}
                         alt={asset.symbol}
                         className="w-full h-full object-contain p-1"
