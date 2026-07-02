@@ -21,6 +21,12 @@ function formatAmount(amount: string, symbol: string = 'UCT', decimals: number =
   return `${whole}.${frac.toString().padStart(decimals, '0').replace(/0+$/, '')} ${symbol}`;
 }
 
+function toBaseUnits(amount: string, decimals: number): bigint {
+  const [whole, frac = ''] = amount.split('.');
+  const fracPadded = (frac + '0'.repeat(decimals)).slice(0, decimals);
+  return BigInt(whole || '0') * (10n ** BigInt(decimals)) + BigInt(fracPadded || '0');
+}
+
 async function parseWithDeepSeek(text: string): Promise<any> {
   const resp = await fetch('/api/parse', {
     method: 'POST',
@@ -47,8 +53,7 @@ function localParse(text: string): any {
 
   const mintMatch = lower.match(/mint\s+(\d+(?:\.\d+)?)\s*(\w+)?/);
   if (mintMatch) {
-    const amt = Math.round(parseFloat(mintMatch[1]) * 1_000_000).toString();
-    return { action: 'mint', amount: amt, coinId: mintMatch[2]?.toUpperCase() ?? 'UCT' };
+    return { action: 'mint', amount: mintMatch[1], coinId: mintMatch[2]?.toUpperCase() ?? 'UCT' };
   }
 
   const sendMatch = text.match(/send\s+(\d+(?:\.\d+)?)\s*(\w+)?\s+to\s+(@?\S+)/i)
@@ -200,13 +205,15 @@ updateMsg(pendingId, {
         }
 
         case 'mint': {
-          const amt = BigInt(cmd.amount ?? '1000000');
           const coinId = cmd.coinId ?? 'UCT';
+          const mintAsset = assets.find((a: any) => a.symbol?.toUpperCase() === coinId.toUpperCase() || a.coinId === coinId);
+          const mintDecimals = mintAsset?.decimals ?? 18;
+          const amt = toBaseUnits(cmd.amount ?? '1000', mintDecimals);
           try {
-            const pendingId = appendMsg({ role: 'assistant', content: `🏭 Minting ${formatAmount(amt.toString(), coinId)}…`, status: 'pending' });
+            const pendingId = appendMsg({ role: 'assistant', content: `🏭 Minting ${formatAmount(amt.toString(), coinId, mintDecimals)}…`, status: 'pending' });
 const result = await mintTokens(coinId, amt);
 if (result.success) {
-  updateMsg(pendingId, { content: `✅ **Minted!** ${formatAmount(amt.toString(), coinId)}\nToken ID: \`${result.tokenId?.slice(0, 20) ?? 'N/A'}…\``, status: 'success' });
+  updateMsg(pendingId, { content: `✅ **Minted!** ${formatAmount(amt.toString(), coinId, mintDecimals)}\nToken ID: \`${result.tokenId?.slice(0, 20) ?? 'N/A'}…\``, status: 'success' });
 } else {
   updateMsg(pendingId, { content: `❌ Mint failed: ${result.error}`, status: 'error' });
 }
