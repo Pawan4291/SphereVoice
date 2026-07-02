@@ -1,7 +1,9 @@
 import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
 import type { ConnectClient, ConnectResult } from '@unicitylabs/sphere-sdk/connect';
 export type WalletStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
-
+const KNOWN_COIN_IDS: Record<string, string> = {
+  UCT: 'f581d30f593e4b369d684a4563b5246f07b1d265f7178a2c0a82b81f39c24dc0',
+};
 export interface Asset {
   coinId: string;
   symbol: string;
@@ -202,9 +204,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 const sendPayment = useCallback(async (recipient: string, amount: string, coinId: string, memo?: string) => {
     if (!sphereRef.current) throw new Error('Wallet not connected');
     console.log('DEBUG assets:', JSON.stringify(assets));
-    const matchedAsset = assets.find((a: any) => a.symbol?.toUpperCase() === coinId?.toUpperCase() || a.coinId === coinId);
-    console.log('DEBUG matchedAsset:', JSON.stringify(matchedAsset));
-    const hexCoinId = matchedAsset?.coinId ?? coinId;
+   const hexCoinId = KNOWN_COIN_IDS[coinId?.toUpperCase()] ?? coinId;
     console.log('DEBUG hexCoinId being sent:', hexCoinId);
     const result: any = await sphereRef.current.intent('send', {
       to: recipient,
@@ -232,12 +232,7 @@ const sendPayment = useCallback(async (recipient: string, amount: string, coinId
   const mintTokens = useCallback(async (coinId: string, amount: bigint) => {
     if (!sphereRef.current) throw new Error('Wallet not connected');
     try {
-      let hexId = coinId;
-      try {
-        const { getCoinIdBySymbol } = await import('@unicitylabs/sphere-sdk');
-        const resolved = getCoinIdBySymbol?.(coinId);
-        if (resolved) hexId = resolved;
-      } catch (_) {}
+      let hexId = KNOWN_COIN_IDS[coinId.toUpperCase()] ?? coinId;
 
       const result: any = await sphereRef.current.intent('mint', {
         coinId: hexId,
@@ -326,12 +321,7 @@ const sendPayment = useCallback(async (recipient: string, amount: string, coinId
       addAstridLog({ type: 'approval', message: `Policy OK. Authorizing autonomous payment to ${payment.to}`, paymentId: payment.id });
       addAstridLog({ type: 'sent', message: `Calling sphere Connect intent 'send' → ${payment.to} ${payment.amount} ${payment.coinId}`, paymentId: payment.id });
 
-     let hexCoinId = payment.coinId;
-      try {
-        const { getCoinIdBySymbol } = await import('@unicitylabs/sphere-sdk');
-        const resolved = getCoinIdBySymbol?.(payment.coinId);
-        if (resolved) hexCoinId = resolved;
-      } catch (_) {}
+     const hexCoinId = KNOWN_COIN_IDS[payment.coinId?.toUpperCase()] ?? payment.coinId;
       const result: any = await sphereRef.current.intent('send', {
         to: payment.to,
         recipient: payment.to,
