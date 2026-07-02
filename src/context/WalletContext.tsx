@@ -204,7 +204,8 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 const sendPayment = useCallback(async (recipient: string, amount: string, coinId: string, memo?: string) => {
     if (!sphereRef.current) throw new Error('Wallet not connected');
     console.log('DEBUG assets:', JSON.stringify(assets));
-   const hexCoinId = KNOWN_COIN_IDS[coinId?.toUpperCase()] ?? coinId;
+   const matchedAsset = assets.find((a: any) => a.symbol?.toUpperCase() === coinId?.toUpperCase() || a.coinId === coinId);
+const hexCoinId = matchedAsset?.coinId ?? KNOWN_COIN_IDS[coinId?.toUpperCase()] ?? coinId;
     console.log('DEBUG hexCoinId being sent:', hexCoinId);
     const result: any = await sphereRef.current.intent('send', {
       to: recipient,
@@ -321,7 +322,10 @@ const sendPayment = useCallback(async (recipient: string, amount: string, coinId
       addAstridLog({ type: 'approval', message: `Policy OK. Authorizing autonomous payment to ${payment.to}`, paymentId: payment.id });
       addAstridLog({ type: 'sent', message: `Calling sphere Connect intent 'send' → ${payment.to} ${payment.amount} ${payment.coinId}`, paymentId: payment.id });
 
-     const hexCoinId = KNOWN_COIN_IDS[payment.coinId?.toUpperCase()] ?? payment.coinId;
+     const scheduledAsset: any = (await sphereRef.current.query('sphere_getAssets').catch(() => [])).find(
+  (a: any) => a.symbol?.toUpperCase() === payment.coinId?.toUpperCase() || a.coinId === payment.coinId
+);
+const hexCoinId = scheduledAsset?.coinId ?? KNOWN_COIN_IDS[payment.coinId?.toUpperCase()] ?? payment.coinId;
       const result: any = await sphereRef.current.intent('send', {
         to: payment.to,
         recipient: payment.to,
