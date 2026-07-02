@@ -12,12 +12,13 @@ interface Message {
   data?: any;
 }
 
-function formatAmount(amount: string, symbol: string = 'UCT'): string {
+function formatAmount(amount: string, symbol: string = 'UCT', decimals: number = 6): string {
   const n = BigInt(amount);
-  const whole = n / 1_000_000n;
-  const frac = n % 1_000_000n;
+  const divisor = 10n ** BigInt(decimals);
+  const whole = n / divisor;
+  const frac = n % divisor;
   if (frac === 0n) return `${whole} ${symbol}`;
-  return `${whole}.${frac.toString().padStart(6, '0').replace(/0+$/, '')} ${symbol}`;
+  return `${whole}.${frac.toString().padStart(decimals, '0').replace(/0+$/, '')} ${symbol}`;
 }
 
 async function parseWithDeepSeek(text: string): Promise<any> {
@@ -139,7 +140,7 @@ export default function ChatTab() {
             if (assets.length === 0) {
               responseContent = '📊 Your wallet is empty. Mint some test tokens first with: *"Mint 1000 UCT"*';
             } else {
-              const lines = assets.map((a: any) => `**${a.symbol ?? a.coinId}**: ${formatAmount(a.totalAmount?.toString() ?? '0', a.symbol)}`);
+              const lines = assets.map((a: any) => `**${a.symbol ?? a.coinId}**: ${formatAmount(a.totalAmount?.toString() ?? '0', a.symbol, a.decimals ?? 6)}`);
               responseContent = `📊 **Live Balance** (from testnet)\n\n${lines.join('\n')}`;
             }
           } catch (err: any) {
@@ -155,7 +156,7 @@ export default function ChatTab() {
               responseContent = '📜 No transactions found yet. Mint tokens or send a payment to see history.';
             } else {
               const lines = transfers.slice(0, 5).map(t =>
-                `${t.type === 'sent' ? '↗️' : t.type === 'mint' ? '🏭' : '↙️'} **${t.type.toUpperCase()}** ${formatAmount(t.amount, t.symbol)} ${t.counterpart ? `→ ${t.counterpart}` : ''}`
+                `${t.type === 'sent' ? '↗️' : t.type === 'mint' ? '🏭' : '↙️'} **${t.type.toUpperCase()}** ${formatAmount(t.amount, t.symbol, (t as any).decimals ?? 6)} ${t.counterpart ? `→ ${t.counterpart}` : ''}`
               );
               responseContent = `📜 **Transaction History** (last ${Math.min(5, transfers.length)})\n\n${lines.join('\n')}`;
             }
@@ -173,9 +174,11 @@ export default function ChatTab() {
             break;
           }
           try {
-            appendMsg({ role: 'assistant', content: `🔄 Sending ${formatAmount(cmd.amount, cmd.coinId ?? 'UCT')} to **${cmd.to}**…`, status: 'pending' });
+            const sendAsset = assets.find((a: any) => a.symbol === (cmd.coinId ?? 'UCT') || a.coinId === (cmd.coinId ?? 'UCT'));
+            const sendDecimals = sendAsset?.decimals ?? 6;
+            appendMsg({ role: 'assistant', content: `🔄 Sending ${formatAmount(cmd.amount, cmd.coinId ?? 'UCT', sendDecimals)} to **${cmd.to}**…`, status: 'pending' });
             const result = await sendPayment(cmd.to, cmd.amount, cmd.coinId ?? 'UCT');
-            responseContent = `✅ **Payment Sent!**\nRecipient: ${cmd.to}\nAmount: ${formatAmount(cmd.amount, cmd.coinId ?? 'UCT')}\nStatus: ${result.status}${result.txId ? `\nTx: \`${result.txId.slice(0, 20)}…\`` : ''}`;
+            responseContent = `✅ **Payment Sent!**\nRecipient: ${cmd.to}\nAmount: ${formatAmount(cmd.amount, cmd.coinId ?? 'UCT', sendDecimals)}\nStatus: ${result.status}${result.txId ? `\nTx: \`${result.txId.slice(0, 20)}…\`` : ''}`;
           } catch (err: any) {
             responseContent = `❌ Send failed: ${err.message}`;
             responseStatus = 'error';
@@ -273,7 +276,6 @@ export default function ChatTab() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Messages */}
       <div className="flex-1 overflow-y-auto space-y-4 p-4 scrollbar-thin">
         <AnimatePresence initial={false}>
           {messages.map((msg) => (
@@ -385,7 +387,7 @@ export default function ChatTab() {
         </div>
         <p className="text-xs text-gray-700 mt-2 flex items-center gap-1">
           <Zap className="w-3 h-3 text-orange-600" />
-          Powered by DeepSeek AI → Sphere SDK → Unicity Testnet
+          Powered by AI → Sphere SDK → Unicity Testnet
         </p>
       </div>
     </div>
