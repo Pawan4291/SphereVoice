@@ -158,16 +158,16 @@ const updateMsg = (id: string, patch: Partial<Message>) => {
 
         case 'history': {
   try {
-    await refreshHistory();          // <-- add this line, pulls real data first
-    if (transfers.length === 0) {
+    const freshTransfers = await refreshHistory();
+    if (freshTransfers.length === 0) {
       responseContent = '📜 No transactions found yet. Mint tokens or send a payment to see history.';
     } else {
-      const lines = transfers.slice(0, 5).map(t => {
+      const lines = freshTransfers.slice(0, 5).map(t => {
         const hAsset = assets.find((a: any) => a.symbol === t.symbol || a.coinId === t.coinId);
         const hDecimals = hAsset?.decimals ?? 6;
         return `${t.type === 'sent' ? '↗️' : t.type === 'mint' ? '🏭' : '↙️'} **${t.type.toUpperCase()}** ${formatAmount(t.amount, t.symbol, hDecimals)} ${t.counterpart ? `→ ${t.counterpart}` : ''}`;
       });
-      responseContent = `📜 **Transaction History** (last ${Math.min(5, transfers.length)})\n\n${lines.join('\n')}`;
+      responseContent = `📜 **Transaction History** (last ${Math.min(5, freshTransfers.length)})\n\n${lines.join('\n')}`;
     }
   } catch (err: any) {
     responseContent = `❌ History fetch failed: ${err.message}`;

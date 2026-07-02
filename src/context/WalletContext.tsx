@@ -55,7 +55,7 @@ interface WalletContextValue {
   connectWallet: () => Promise<void>;
   disconnectWallet: () => void;
   refreshBalance: () => Promise<void>;
-  refreshHistory: () => Promise<void>;
+  refreshHistory: () => Promise<TransferRecord[]>;
   sendPayment: (recipient: string, amount: string, coinId: string, memo?: string) => Promise<{ status: string; txId?: string }>;
   mintTokens: (coinId: string, amount: bigint) => Promise<{ success: boolean; tokenId?: string; error?: string }>;
   registerNametag: (name: string) => Promise<{ success: boolean; error?: string }>;
@@ -181,25 +181,22 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, []);
 
   const refreshHistory = useCallback(async () => {
-    if (!sphereRef.current) throw new Error('Wallet not connected');
-    try {
-      const result: any = await sphereRef.current.query('sphere_getHistory');
-      const rawHistory: TransferRecord[] = ((result?.transfers ?? result ?? [])).map((t: any) => ({
-        id: t.id ?? generateId(),
-        type: 'received' as const,
-        amount: t.amount?.toString() ?? '0',
-        coinId: t.coinId ?? 'UCT',
-        symbol: t.symbol ?? 'UCT',
-        counterpart: t.senderNametag ?? t.sender ?? 'Unknown',
-        timestamp: t.timestamp ?? Date.now(),
-        status: t.status ?? 'confirmed',
-        txId: t.transferId ?? t.id,
-      }));
-      if (rawHistory.length > 0) {
-        setTransfers(rawHistory);
-      }
-    } catch (err) { console.error('refreshHistory failed:', err); }
-  }, []);
+  if (!sphereRef.current) throw new Error('Wallet not connected');
+  const result: any = await sphereRef.current.query('sphere_getHistory');
+  const rawHistory: TransferRecord[] = ((result?.transfers ?? result ?? [])).map((t: any) => ({
+    id: t.id ?? generateId(),
+    type: 'received' as const,
+    amount: t.amount?.toString() ?? '0',
+    coinId: t.coinId ?? 'UCT',
+    symbol: t.symbol ?? 'UCT',
+    counterpart: t.senderNametag ?? t.sender ?? 'Unknown',
+    timestamp: t.timestamp ?? Date.now(),
+    status: t.status ?? 'confirmed',
+    txId: t.transferId ?? t.id,
+  }));
+  if (rawHistory.length > 0) setTransfers(rawHistory);
+  return rawHistory;
+}, []);
 
 const sendPayment = useCallback(async (recipient: string, amount: string, coinId: string, memo?: string) => {
     if (!sphereRef.current) throw new Error('Wallet not connected');
