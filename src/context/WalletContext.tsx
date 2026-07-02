@@ -202,11 +202,17 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const sendPayment = useCallback(async (recipient: string, amount: string, coinId: string, memo?: string) => {
     if (!sphereRef.current) throw new Error('Wallet not connected');
+    let hexCoinId = coinId;
+    try {
+      const { getCoinIdBySymbol } = await import('@unicitylabs/sphere-sdk');
+      const resolved = getCoinIdBySymbol?.(coinId);
+      if (resolved) hexCoinId = resolved;
+    } catch (_) {}
     const result: any = await sphereRef.current.intent('send', {
       to: recipient,
       recipient,
       amount,
-      coinId,
+      coinId: hexCoinId,
       memo,
     });
     try { await refreshBalance(); } catch (_) {}
@@ -322,11 +328,17 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       addAstridLog({ type: 'approval', message: `Policy OK. Authorizing autonomous payment to ${payment.to}`, paymentId: payment.id });
       addAstridLog({ type: 'sent', message: `Calling sphere Connect intent 'send' → ${payment.to} ${payment.amount} ${payment.coinId}`, paymentId: payment.id });
 
-     const result: any = await sphereRef.current.intent('send', {
+     let hexCoinId = payment.coinId;
+      try {
+        const { getCoinIdBySymbol } = await import('@unicitylabs/sphere-sdk');
+        const resolved = getCoinIdBySymbol?.(payment.coinId);
+        if (resolved) hexCoinId = resolved;
+      } catch (_) {}
+      const result: any = await sphereRef.current.intent('send', {
         to: payment.to,
         recipient: payment.to,
         amount: payment.amount,
-        coinId: payment.coinId,
+        coinId: hexCoinId,
       });
 
       const txId = result?.transferId ?? result?.id ?? generateId();
