@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RefreshCw, Coins, TrendingUp, Zap, AlertCircle, Plus, Loader2 } from 'lucide-react';
 import { useWallet } from '../context/WalletContext';
@@ -22,6 +22,8 @@ export default function BalanceTab() {
   const [mintResult, setMintResult] = useState<{ success?: boolean; msg?: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+
+  
   const handleRefresh = async () => {
     if (refreshing || status !== 'connected') return;
     setRefreshing(true);
@@ -40,7 +42,9 @@ export default function BalanceTab() {
     setMinting(true);
     setMintResult(null);
     try {
-      const raw = Math.round(parseFloat(mintAmt) * 1_000_000);
+      const mintAsset = assets.find((a: any) => a.symbol?.toUpperCase() === mintCoin.toUpperCase());
+      const decimals = mintAsset?.decimals ?? 18;
+      const raw = Math.round(parseFloat(mintAmt) * (10 ** decimals));
       if (isNaN(raw) || raw <= 0) throw new Error('Invalid amount');
       const result = await mintTokens(mintCoin, BigInt(raw));
       setMintResult({ success: result.success, msg: result.success ? `Minted! Token: ${result.tokenId?.slice(0, 16) ?? 'N/A'}…` : result.error ?? 'Mint failed' });
@@ -50,6 +54,12 @@ export default function BalanceTab() {
       setMinting(false);
     }
   };
+
+React.useEffect(() => {
+    if (status !== 'connected') return;
+    const iv = setInterval(() => { refreshBalance().catch(() => {}); }, 5000);
+    return () => clearInterval(iv);
+  }, [status, refreshBalance]);
 
 
   if (status !== 'connected') {
@@ -148,8 +158,14 @@ export default function BalanceTab() {
                   className="flex items-center justify-between p-4 bg-black/40 border border-orange-500/10 rounded-xl hover:border-orange-500/25 transition-all"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-orange-500/20 border border-orange-500/30 flex items-center justify-center">
-                      <span className="text-xs font-bold text-orange-400">{(asset.symbol ?? 'T').slice(0, 3)}</span>
+                    <div className="w-10 h-10 rounded-full bg-orange-500/20 border border-orange-500/30 flex items-center justify-center overflow-hidden">
+                      <img
+                        src={`https://cryptologos.cc/logos/${(asset.symbol ?? '').toLowerCase()}-${(asset.symbol ?? '').toLowerCase()}-logo.png`}
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden'); }}
+                        alt={asset.symbol}
+                        className="w-full h-full object-contain p-1"
+                      />
+                      <span className="text-xs font-bold text-orange-400 hidden">{(asset.symbol ?? 'T').slice(0, 3)}</span>
                     </div>
                     <div>
                       <p className="text-sm font-medium text-white">{asset.symbol ?? asset.coinId?.slice(0, 8) ?? 'Unknown'}</p>
