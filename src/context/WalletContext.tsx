@@ -183,6 +183,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const refreshHistory = useCallback(async () => {
   if (!sphereRef.current) throw new Error('Wallet not connected');
   const result: any = await sphereRef.current.query('sphere_getHistory');
+  console.log('RAW HISTORY:', JSON.stringify(result, null, 2));
   const rawHistory: TransferRecord[] = ((result?.transfers ?? result ?? [])).map((t: any) => ({
     id: t.id ?? generateId(),
     type: 'received' as const,
