@@ -198,7 +198,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       if (rawHistory.length > 0) {
         setTransfers(rawHistory);
       }
-    } catch (_) { /* history not available */ }
+    } catch (err) { console.error('refreshHistory failed:', err); }
   }, []);
 
 const sendPayment = useCallback(async (recipient: string, amount: string, coinId: string, memo?: string) => {
