@@ -200,10 +200,13 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     } catch (_) { /* history not available */ }
   }, []);
 
- const sendPayment = useCallback(async (recipient: string, amount: string, coinId: string, memo?: string) => {
+const sendPayment = useCallback(async (recipient: string, amount: string, coinId: string, memo?: string) => {
     if (!sphereRef.current) throw new Error('Wallet not connected');
+    console.log('DEBUG assets:', JSON.stringify(assets));
     const matchedAsset = assets.find((a: any) => a.symbol === coinId || a.coinId === coinId);
+    console.log('DEBUG matchedAsset:', JSON.stringify(matchedAsset));
     const hexCoinId = matchedAsset?.coinId ?? coinId;
+    console.log('DEBUG hexCoinId being sent:', hexCoinId);
     const result: any = await sphereRef.current.intent('send', {
       to: recipient,
       recipient,
