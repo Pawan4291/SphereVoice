@@ -203,7 +203,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 const sendPayment = useCallback(async (recipient: string, amount: string, coinId: string, memo?: string) => {
     if (!sphereRef.current) throw new Error('Wallet not connected');
     console.log('DEBUG assets:', JSON.stringify(assets));
-    const matchedAsset = assets.find((a: any) => a.symbol === coinId || a.coinId === coinId);
+    const matchedAsset = assets.find((a: any) => a.symbol?.toUpperCase() === coinId?.toUpperCase() || a.coinId === coinId);
     console.log('DEBUG matchedAsset:', JSON.stringify(matchedAsset));
     const hexCoinId = matchedAsset?.coinId ?? coinId;
     console.log('DEBUG hexCoinId being sent:', hexCoinId);
@@ -304,8 +304,8 @@ const sendPayment = useCallback(async (recipient: string, amount: string, coinId
       let sufficient = true;
       try {
         const assetList: any = await sphereRef.current.query('sphere_getAssets');
-        const asset = (assetList ?? []).find((a: any) =>
-          a.symbol === payment.coinId || a.coinId === payment.coinId
+       const asset = (assetList ?? []).find((a: any) =>
+          a.symbol?.toUpperCase() === payment.coinId?.toUpperCase() || a.coinId === payment.coinId
         );
         const balance = asset ? BigInt(asset.totalAmount?.toString() ?? '0') : 0n;
         const needed = BigInt(payment.amount);
