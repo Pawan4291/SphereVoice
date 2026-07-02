@@ -242,7 +242,7 @@ function AppShell() {
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5 }}
-        className="relative z-10 min-h-screen flex flex-col"
+        className="relative z-10 h-screen flex flex-col"
       >
         {/* Top Bar */}
         <header className="flex items-center justify-between px-4 py-3 border-b border-orange-500/10 bg-black/40 backdrop-blur-xl">
