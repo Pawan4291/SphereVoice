@@ -174,7 +174,7 @@ export default function ChatTab() {
             break;
           }
           try {
-            const sendAsset = assets.find((a: any) => a.symbol === (cmd.coinId ?? 'UCT') || a.coinId === (cmd.coinId ?? 'UCT'));
+           const sendAsset = assets.find((a: any) => a.symbol?.toUpperCase() === (cmd.coinId ?? 'UCT').toUpperCase() || a.coinId === (cmd.coinId ?? 'UCT'));
             const sendDecimals = sendAsset?.decimals ?? 6;
             const baseAmount = Math.round(parseFloat(cmd.amount) * (10 ** sendDecimals)).toString();
             appendMsg({ role: 'assistant', content: `🔄 Sending ${formatAmount(baseAmount, cmd.coinId ?? 'UCT', sendDecimals)} to **${cmd.to}**…`, status: 'pending' });
