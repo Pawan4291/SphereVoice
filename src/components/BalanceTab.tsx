@@ -109,10 +109,10 @@ export default function BalanceTab() {
         />
         <div className="relative">
           <p className="text-sm text-gray-500 mb-1">Total Portfolio</p>
-          <p className="text-4xl font-bold text-white font-mono">
-            {assets.length}
+         <p className="text-4xl font-bold text-white font-mono">
+            ${assets.reduce((sum, a: any) => sum + (a.fiatValueUsd ?? 0), 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </p>
-          <p className="text-sm text-orange-400 mt-1">Assets held • Unicity Testnet</p>
+          <p className="text-sm text-orange-400 mt-1">Total value • Unicity Testnet</p>
           <div className="flex items-center gap-1.5 mt-3">
             <motion.div
               animate={{ scale: [1, 1.2, 1] }}
@@ -210,7 +210,7 @@ export default function BalanceTab() {
             </motion.div>
           )}
         </AnimatePresence>
-        <p className="text-xs text-gray-700 mt-2">Real on-chain token mint via Sphere SDK → Unicity testnet. <a href="https://faucet.unicity.network/faucet/" target="_blank" rel="noreferrer" className="text-orange-600 hover:text-orange-500">Faucet ↗</a></p>
+        <p className="text-xs text-gray-700 mt-2">Real on-chain token mint via Sphere SDK → Unicity testnet.</p>
       </div>
     </div>
   );
