@@ -111,9 +111,15 @@ export default function ChatTab() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const appendMsg = (msg: Omit<Message, 'id' | 'timestamp'>) => {
-    setMessages(prev => [...prev, { ...msg, id: genId(), timestamp: Date.now() }]);
-  };
+ const appendMsg = (msg: Omit<Message, 'id' | 'timestamp'>) => {
+  const id = genId();
+  setMessages(prev => [...prev, { ...msg, id, timestamp: Date.now() }]);
+  return id;
+};
+
+const updateMsg = (id: string, patch: Partial<Message>) => {
+  setMessages(prev => prev.map(m => m.id === id ? { ...m, ...patch } : m));
+};
 
   const handleSend = async () => {
     if (!input.trim() || loading) return;
@@ -177,13 +183,16 @@ export default function ChatTab() {
            const sendAsset = assets.find((a: any) => a.symbol?.toUpperCase() === (cmd.coinId ?? 'UCT').toUpperCase() || a.coinId === (cmd.coinId ?? 'UCT'));
             const sendDecimals = sendAsset?.decimals ?? 6;
             const baseAmount = Math.round(parseFloat(cmd.amount) * (10 ** sendDecimals)).toString();
-            appendMsg({ role: 'assistant', content: `🔄 Sending ${formatAmount(baseAmount, cmd.coinId ?? 'UCT', sendDecimals)} to **${cmd.to}**…`, status: 'pending' });
-            const result = await sendPayment(cmd.to, baseAmount, cmd.coinId ?? 'UCT');
-            responseContent = `✅ **Payment Sent!**\nRecipient: ${cmd.to}\nAmount: ${formatAmount(baseAmount, cmd.coinId ?? 'UCT', sendDecimals)}\nStatus: ${result.status}${result.txId ? `\nTx: \`${result.txId.slice(0, 20)}…\`` : ''}`;
+            const pendingId = appendMsg({ role: 'assistant', content: `🔄 Sending ${formatAmount(baseAmount, cmd.coinId ?? 'UCT', sendDecimals)} to **${cmd.to}**…`, status: 'pending' });
+const result = await sendPayment(cmd.to, baseAmount, cmd.coinId ?? 'UCT');
+updateMsg(pendingId, {
+  content: `✅ **Payment Sent!**\nRecipient: ${cmd.to}\nAmount: ${formatAmount(baseAmount, cmd.coinId ?? 'UCT', sendDecimals)}\nStatus: ${result.status}${result.txId ? `\nTx: \`${result.txId.slice(0, 20)}…\`` : ''}`,
+  status: 'success',
+});
           } catch (err: any) {
-            responseContent = `❌ Send failed: ${err.message}`;
-            responseStatus = 'error';
-          }
+  responseContent = `❌ Send failed: ${err.message}`;
+  responseStatus = 'error';
+}
           break;
         }
 
@@ -191,14 +200,13 @@ export default function ChatTab() {
           const amt = BigInt(cmd.amount ?? '1000000');
           const coinId = cmd.coinId ?? 'UCT';
           try {
-            appendMsg({ role: 'assistant', content: `🏭 Minting ${formatAmount(amt.toString(), coinId)}…`, status: 'pending' });
-            const result = await mintTokens(coinId, amt);
-            if (result.success) {
-              responseContent = `✅ **Minted!** ${formatAmount(amt.toString(), coinId)}\nToken ID: \`${result.tokenId?.slice(0, 20) ?? 'N/A'}…\``;
-            } else {
-              responseContent = `❌ Mint failed: ${result.error}`;
-              responseStatus = 'error';
-            }
+            const pendingId = appendMsg({ role: 'assistant', content: `🏭 Minting ${formatAmount(amt.toString(), coinId)}…`, status: 'pending' });
+const result = await mintTokens(coinId, amt);
+if (result.success) {
+  updateMsg(pendingId, { content: `✅ **Minted!** ${formatAmount(amt.toString(), coinId)}\nToken ID: \`${result.tokenId?.slice(0, 20) ?? 'N/A'}…\``, status: 'success' });
+} else {
+  updateMsg(pendingId, { content: `❌ Mint failed: ${result.error}`, status: 'error' });
+}
           } catch (err: any) {
             responseContent = `❌ Mint failed: ${err.message}`;
             responseStatus = 'error';
