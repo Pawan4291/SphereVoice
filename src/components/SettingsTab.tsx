@@ -228,7 +228,6 @@ export default function SettingsTab() {
       <div className="space-y-2">
         <p className="text-xs text-gray-600 uppercase tracking-wider">Resources</p>
         {[
-          { label: 'Testnet Faucet', href: 'https://faucet.unicity.network/faucet/', desc: 'Self-mint test tokens' },
           { label: 'SMT Explorer', href: 'https://unicitynetwork.github.io/smt-explorer/', desc: 'Verify transactions on-chain' },
           { label: 'Sphere SDK', href: 'https://github.com/unicity-sphere/sphere-sdk', desc: 'Developer docs' },
           { label: 'Astrid Agent', href: 'https://github.com/unicity-astrid/astrid', desc: 'Autonomous agent framework' },
