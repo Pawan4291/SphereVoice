@@ -8,7 +8,7 @@ export async function getAstridWallet() {
   if (cachedSphere) return cachedSphere;
   const base = createNodeProviders({
   network: 'testnet',
-  oracle: { apiKey: 'sk_ddc3cfcc001e4a28ac3fad7407f99590' },
+ oracle: { apiKey: process.env.VITE_ORACLE_API_KEY },
   dataDir: '/tmp/sphere-data',
   tokensDir: '/tmp/sphere-tokens',
 });
