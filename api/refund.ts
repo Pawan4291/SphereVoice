@@ -10,8 +10,14 @@ export default async function handler(req: any, res: any) {
   const remainingCycles = (s.rule.totalCycles ?? 1) - (s.cyclesDone ?? 0);
   if (remainingCycles <= 0) return res.status(400).json({ error: 'nothing left to refund' });
   const remaining = (BigInt(remainingCycles) * BigInt(s.amount)).toString();
-  const sphere = await getAstridWallet();
-  const result = await sphere.payments.send({ recipient: s.funder, amount: remaining, coinId: s.coinId });
+  let result;
+  try {
+    const sphere = await getAstridWallet();
+    result = await sphere.payments.send({ recipient: s.funder, amount: remaining, coinId: s.coinId });
+  } catch (err: any) {
+    console.error('Refund send failed:', err);
+    return res.status(500).json({ error: err?.message ?? 'send failed', code: err?.code });
+  }
   s.refunded = true;
   s.status = 'cancelled';
   await redis.hset('schedules', { [id]: JSON.stringify(s) });
