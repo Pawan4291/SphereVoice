@@ -380,7 +380,7 @@ if (result.success) {
       </div>
 
      <div className="p-4 border-t border-orange-500/10">
-        <div className="relative flex items-center justify-between mb-2">
+        <div className="relative flex items-center gap-2 mb-2 overflow-x-auto">
           <button
             onClick={() => setShowQuickCommands(v => !v)}
             className="flex items-center gap-1 text-xs px-3 py-1.5 bg-black/40 border border-orange-500/20 rounded-full text-orange-300 hover:bg-orange-500/20 transition-all"
@@ -389,23 +389,19 @@ if (result.success) {
           </button>
           <button
             onClick={clearChat}
-            className="flex items-center gap-1 text-xs px-3 py-1 text-orange-300 hover:text-orange-200 transition-all"
+            className="flex items-center gap-1 text-xs px-3 py-1 text-orange-300 hover:text-orange-200 transition-all ml-auto flex-shrink-0"
           >
             🗑 Clear chat
           </button>
-          {showQuickCommands && (
-            <div className="absolute left-0 top-full mt-1 z-20 bg-black/90 border border-orange-500/20 rounded-xl p-2 flex flex-col gap-1 shadow-lg min-w-[240px]">
-              {suggestions.map((s) => (
-                <button
-                  key={s}
-                  onClick={() => { setInput(s); setShowQuickCommands(false); }}
-                  className="text-xs text-left px-3 py-1.5 rounded-lg text-orange-300 hover:bg-orange-500/20 transition-all"
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-          )}
+          {showQuickCommands && suggestions.map((s) => (
+            <button
+              key={s}
+              onClick={() => { setInput(s); setShowQuickCommands(false); }}
+              className="text-xs px-3 py-1.5 bg-black/40 border border-orange-500/20 rounded-full text-orange-300 hover:bg-orange-500/20 transition-all whitespace-nowrap"
+            >
+              {s}
+            </button>
+          ))}
         </div>
         <div className="flex gap-2 items-end">
           <div className="flex-1 relative">
