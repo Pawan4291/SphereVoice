@@ -3,5 +3,11 @@
     "api/**/*.ts": {
       "includeFiles": "node_modules/{@unicitylabs,@noble}/**"
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/cron-execute",
+      "schedule": "* * * * *"
+    }
+  ]
 }

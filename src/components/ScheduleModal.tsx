@@ -61,8 +61,8 @@ export default function ScheduleModal({ initial, onClose, onScheduled }: Props) 
       await sendPayment(ASTRID_ADDRESS, totalBase, coinId);
 
       const rule = mode === 'once'
-        ? { type: 'once', due_at: runMs }
-        : { type: 'recurring', startAt: startMs, intervalMs, totalCycles };
+  ? { type: 'once', due_at: runMs, totalCycles: 1 }
+  : { type: 'recurring', startAt: startMs, intervalMs, totalCycles };
 
       await fetch('/api/schedule', {
         method: 'POST',
