@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Bot, User, Zap, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import { useWallet } from '../context/WalletContext';
 import ScheduleModal from './ScheduleModal';
-const [scheduleDraft, setScheduleDraft] = useState<{ to: string; amount: string; coinId: string } | null>(null);
+
 interface Message {
   id: string;
   role: 'user' | 'assistant' | 'system';
@@ -110,7 +110,8 @@ export default function ChatTab() {
     }
   ]);
   const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(false);
+ const [loading, setLoading] = useState(false);
+const [scheduleDraft, setScheduleDraft] = useState<{ to: string; amount: string; coinId: string } | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
