@@ -22,6 +22,7 @@ export async function getAstridWallet() {
   network: 'testnet',
   mnemonic: process.env.ASTRID_MNEMONIC,
 });
+ console.log('[Astrid Debug] trustBase:', !!sphere.getAggregator().getTrustBaseJson?.(), 'url:', sphere.getAggregator().getAggregatorUrl?.(), 'apiKey:', !!sphere.getAggregator().getApiKey?.());
   cachedSphere = sphere;
   return sphere;
 }
