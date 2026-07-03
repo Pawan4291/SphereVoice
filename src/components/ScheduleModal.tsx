@@ -20,7 +20,7 @@ interface Props {
 }
 
 export default function ScheduleModal({ initial, onClose, onScheduled }: Props) {
-  const { sendPayment, assets } = useWallet();
+  const { sendPayment, assets, nametag, directAddress } = useWallet();
   const [to, setTo] = useState(initial.to);
   const [amount, setAmount] = useState(initial.amount);
   const [coinId, setCoinId] = useState(initial.coinId || 'UCT');
@@ -53,9 +53,9 @@ export default function ScheduleModal({ initial, onClose, onScheduled }: Props) 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          to, amount: perCycleBase, coinId, funder: ASTRID_ADDRESS,
-          rule: { type: 'recurring', intervalMs, totalCycles },
-        }),
+  to, amount: perCycleBase, coinId, funder: nametag ? `@${nametag}` : directAddress,
+  rule: { type: 'recurring', intervalMs, totalCycles },
+}),
       });
       onScheduled({ amount, coinId, to, intervalLabel: `${intervalNum} ${intervalUnit}`, totalCycles });
     } catch (e: any) {
