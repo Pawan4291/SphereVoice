@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RefreshCw, ArrowUpRight, ArrowDownLeft, Layers, ExternalLink, Loader2, Clock } from 'lucide-react';
 import { useWallet } from '../context/WalletContext';
@@ -28,6 +28,12 @@ export default function HistoryTab() {
   const { status, transfers, refreshHistory } = useWallet();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (status === 'connected') {
+      handleRefresh();
+    }
+  }, [status]);
 
   const handleRefresh = async () => {
     if (loading || status !== 'connected') return;
