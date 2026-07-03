@@ -84,7 +84,7 @@ function parseScheduleDate(schedule: string): number {
   if (!schedule) return Date.now();
   const d = new Date(schedule);
   if (!isNaN(d.getTime())) return d.getTime();
-  const relMatch = schedule.match(/in\s+(\d+)\s+(minute|hour|day)/i);
+  const relMatch = schedule.match(/in\s+(\d+)\s+(minute|min|hour|hr|day)/i);
   if (relMatch) {
     const n = parseInt(relMatch[1]);
     const unit = relMatch[2].toLowerCase();

@@ -267,22 +267,17 @@ const hexCoinId = matchedAsset?.coinId ?? KNOWN_COIN_IDS[coinId?.toUpperCase()] 
     return { success: false, error: 'Register a nametag directly in your Sphere wallet — not available from a connected dApp.' };
   }, []);
 
-  const schedulePayment = useCallback(async (to: string, amount: string, coinId: string, due_at: number) => {
-    const payment: ScheduledPayment = {
-      id: generateId(),
-      to,
-      amount,
-      coinId,
-      due_at,
-      status: 'pending',
-      created_at: Date.now(),
-    };
-    setScheduledPayments(prev => [...prev, payment]);
-    // If due immediately
-    if (due_at <= Date.now() + 5000) {
-      setTimeout(() => executeRef.current?.(payment), 1000);
-    }
-  }, []);
+ const schedulePayment = useCallback(async (to: string, amount: string, coinId: string, due_at: number) => {
+  await fetch('/api/schedule', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ to, amount, coinId, rule: { type: 'once', due_at } }),
+  });
+  const payment: ScheduledPayment = {
+    id: generateId(), to, amount, coinId, due_at, status: 'pending', created_at: Date.now(),
+  };
+  setScheduledPayments(prev => [...prev, payment]);
+}, []);
 
   // Execute a scheduled payment — defined with useCallback and stored in ref for stability
   const executeScheduledPayment = useCallback(async (payment: ScheduledPayment) => {
@@ -370,22 +365,6 @@ const hexCoinId = scheduledAsset?.coinId ?? KNOWN_COIN_IDS[payment.coinId?.toUpp
 
   const clearMnemonic = useCallback(() => {
     setGeneratedMnemonic(null);
-  }, []);
-
-  // Cron-like scheduler: check every 30s
-  React.useEffect(() => {
-    const interval = setInterval(() => {
-      setScheduledPayments(prev => {
-        const now = Date.now();
-        prev.forEach(p => {
-          if (p.status === 'pending' && p.due_at <= now) {
-            setTimeout(() => executeRef.current?.(p), 100);
-          }
-        });
-        return prev;
-      });
-    }, 30000);
-    return () => clearInterval(interval);
   }, []);
 
   return (
