@@ -2,7 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Bot, User, Zap, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import { useWallet } from '../context/WalletContext';
-
+import ScheduleModal from './ScheduleModal';
+const [scheduleDraft, setScheduleDraft] = useState<{ to: string; amount: string; coinId: string } | null>(null);
 interface Message {
   id: string;
   role: 'user' | 'assistant' | 'system';
@@ -226,20 +227,15 @@ if (result.success) {
         }
 
        case 'schedule': {
-          if (!cmd.to || !cmd.amount) {
-            responseContent = '❌ Specify recipient and amount. Example: *"Schedule 10 UCT to @bob in 5 minutes"*';
-            responseStatus = 'error';
-            break;
-          }
-          const schedAsset = assets.find((a: any) => a.symbol?.toUpperCase() === (cmd.coinId ?? 'UCT').toUpperCase() || a.coinId === (cmd.coinId ?? 'UCT'));
-          const schedDecimals = schedAsset?.decimals ?? 18;
-          const baseAmount = Math.round(parseFloat(cmd.amount) * (10 ** schedDecimals)).toString();
-          const due = parseScheduleDate(cmd.schedule ?? 'in 5 minutes');
-          await schedulePayment(cmd.to, baseAmount, cmd.coinId ?? 'UCT', due);
-          const timeStr = new Date(due).toLocaleTimeString();
-          responseContent = `🗓️ **Scheduled!**\nRecipient: ${cmd.to}\nAmount: ${formatAmount(baseAmount, cmd.coinId ?? 'UCT', schedDecimals)}\nScheduled for: **${timeStr}**\n\nAstrid will execute this automatically. Watch the *Watch Astrid Work* tab!`;
-          break;
-        }
+  if (!cmd.to || !cmd.amount) {
+    responseContent = '❌ Specify recipient and amount. Example: *"Schedule 10 UCT to @bob every 2 minutes for 10 minutes"*';
+    responseStatus = 'error';
+    break;
+  }
+  setScheduleDraft({ to: cmd.to, amount: cmd.amount, coinId: cmd.coinId ?? 'UCT' });
+  responseContent = '🗓️ Review and confirm the schedule below.';
+  break;
+}
 
         case 'nametag': {
           if (!cmd.nametag) {
@@ -413,6 +409,13 @@ if (result.success) {
           Powered by AI → Sphere SDK → Unicity Testnet
         </p>
       </div>
+      {scheduleDraft && (
+  <ScheduleModal
+    initial={scheduleDraft}
+    onClose={() => setScheduleDraft(null)}
+    onScheduled={() => setScheduleDraft(null)}
+  />
+)}
     </div>
   );
 }
