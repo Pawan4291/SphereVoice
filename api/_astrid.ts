@@ -16,10 +16,11 @@ export async function getAstridWallet() {
     deviceId: 'astrid-server',
   });
   const { sphere } = await Sphere.init({
-    ...providers,
-    mnemonic: process.env.ASTRID_MNEMONIC,
-    nametag: 'astrid',
-  });
+  ...providers,
+  network: 'testnet',
+  mnemonic: process.env.ASTRID_MNEMONIC,
+  nametag: 'astrid',
+});
   cachedSphere = sphere;
   return sphere;
 }
