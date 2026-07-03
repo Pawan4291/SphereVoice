@@ -7,9 +7,11 @@ let cachedSphere: any = null;
 export async function getAstridWallet() {
   if (cachedSphere) return cachedSphere;
   const base = createNodeProviders({
-    network: 'testnet',
-    oracle: { apiKey: 'sk_ddc3cfcc001e4a28ac3fad7407f99590' },
-  });
+  network: 'testnet',
+  oracle: { apiKey: 'sk_ddc3cfcc001e4a28ac3fad7407f99590' },
+  dataDir: '/tmp/sphere-data',
+  tokensDir: '/tmp/sphere-tokens',
+});
   const providers = createWalletApiProviders(base, {
     baseUrl: 'https://wallet-api.unicity.network',
     network: 'testnet2',
