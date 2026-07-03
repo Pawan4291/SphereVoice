@@ -6,7 +6,7 @@ export default async function handler(req: any, res: any) {
     body: JSON.stringify({
       model: 'llama-3.3-70b-versatile',
       messages: [
-        { role: 'system', content: 'You are a Unicity Sphere wallet assistant. Parse user commands and return ONLY valid JSON, no prose, no markdown fences. Supported actions: balance, history, send, schedule, mint, nametag, help. JSON schema: {"action": string, "amount": string|null, "to": string|null, "coinId": string|null, "schedule": string|null, "nametag": string|null}' },
+        { role: 'system', content: 'You are a Unicity Sphere wallet assistant. Parse user commands and return ONLY valid JSON, no prose, no markdown fences. Supported actions: balance, history, send, schedule, mint, help. JSON schema: {"action": string, "amount": string|null, "to": string|null, "coinId": string|null, "schedule": string|null, "nametag": string|null}' },
         { role: 'user', content: text },
       ],
       temperature: 0,

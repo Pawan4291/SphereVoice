@@ -100,17 +100,34 @@ function genId() { return Math.random().toString(36).slice(2) + Date.now().toStr
 
 export default function ChatTab() {
   const { status, assets, transfers, refreshBalance, refreshHistory, sendPayment, mintTokens, registerNametag, schedulePayment, nametag } = useWallet();
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 'welcome',
-      role: 'assistant',
-      content: "Hello! I'm your SphereVoice assistant. You can talk to your Unicity wallet in plain English.\n\nTry: *\"What's my balance?\"*, *\"Send 5 UCT to @alice\"*, *\"Mint 1000 UCT\"*, or *\"Schedule 10 UCT to @bob in 5 minutes\"*.",
-      timestamp: Date.now(),
-      status: 'success',
+  const WELCOME_MSG: Message = {
+    id: 'welcome',
+    role: 'assistant',
+    content: "Hello! I'm your SphereVoice assistant. You can talk to your Unicity wallet in plain English.\n\nTry: *\"What's my balance?\"*, *\"Send 5 UCT to @alice\"*, *\"Mint 1000 UCT\"*, or *\"Schedule 10 UCT to @bob in 5 minutes\"*.",
+    timestamp: Date.now(),
+    status: 'success',
+  };
+
+  const [messages, setMessages] = useState<Message[]>(() => {
+    try {
+      const saved = localStorage.getItem('spherevoice_chat');
+      return saved ? JSON.parse(saved) : [WELCOME_MSG];
+    } catch {
+      return [WELCOME_MSG];
     }
-  ]);
+  });
+
+  useEffect(() => {
+    try { localStorage.setItem('spherevoice_chat', JSON.stringify(messages)); } catch {}
+  }, [messages]);
+
+  const clearChat = () => {
+    setMessages([WELCOME_MSG]);
+    try { localStorage.removeItem('spherevoice_chat'); } catch {}
+  };
   const [input, setInput] = useState('');
  const [loading, setLoading] = useState(false);
+ const [showQuickCommands, setShowQuickCommands] = useState(false);
 const [scheduleDraft, setScheduleDraft] = useState<{ to: string; amount: string; coinId: string } | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -255,7 +272,7 @@ if (result.success) {
 
         case 'help':
         default: {
-          responseContent = `🤖 **SphereVoice Commands**\n\n• *"What's my balance?"*\n• *"Show my transaction history"*\n• *"Send 5 UCT to @alice"*\n• *"Mint 1000 UCT"*\n• *"Schedule 10 UCT to @bob in 5 minutes"*\n• *"Register my nametag as alice"*\n\nAll sends and mints are **real testnet transactions** via the Sphere SDK.${nametag ? `\n\nConnected as: **@${nametag}**` : ''}`;
+          responseContent = `🤖 **SphereVoice Commands**\n\n• *"What's my balance?"*\n• *"Show my transaction history"*\n• *"Send 5 UCT to @alice"*\n• *"Mint 1000 UCT"*\n• *"Schedule 10 UCT to @bob in 5 minutes"*\n\nAll sends and mints are **real testnet transactions** via the Sphere SDK.${nametag ? `\n\nConnected as: **@${nametag}**` : ''}`;
           break;
         }
       }
@@ -295,6 +312,27 @@ if (result.success) {
 
   return (
     <div className="flex flex-col h-full">
+      <div className="relative px-4 pt-3 pb-1 flex items-center justify-start">
+        <button
+          onClick={() => setShowQuickCommands(v => !v)}
+          className="text-xs px-3 py-1.5 bg-orange-500/10 border border-orange-500/20 rounded-full text-orange-300 hover:bg-orange-500/20 transition-all"
+        >
+          Quick Commands
+        </button>
+        {showQuickCommands && (
+          <div className="absolute left-4 top-full mt-1 z-20 bg-black/90 border border-orange-500/20 rounded-xl p-2 flex flex-col gap-1 shadow-lg min-w-[220px]">
+            {suggestions.map((s) => (
+              <button
+                key={s}
+                onClick={() => { setInput(s); setShowQuickCommands(false); }}
+                className="text-xs text-left px-3 py-1.5 rounded-lg text-orange-300 hover:bg-orange-500/20 transition-all"
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
       <div className="flex-1 overflow-y-auto space-y-4 p-4 scrollbar-thin">
         <AnimatePresence initial={false}>
           {messages.map((msg) => (
@@ -362,21 +400,15 @@ if (result.success) {
         <div ref={bottomRef} />
       </div>
 
-      {messages.length <= 2 && (
-        <div className="px-4 pb-2 flex flex-wrap gap-2">
-          {suggestions.map((s) => (
-            <button
-              key={s}
-              onClick={() => setInput(s)}
-              className="text-xs px-3 py-1.5 bg-orange-500/10 border border-orange-500/20 rounded-full text-orange-300 hover:bg-orange-500/20 transition-all"
-            >
-              {s}
-            </button>
-          ))}
+     <div className="p-4 border-t border-orange-500/10">
+        <div className="flex justify-end mb-2">
+          <button
+            onClick={clearChat}
+            className="text-xs px-3 py-1 bg-orange-500/10 border border-orange-500/20 rounded-full text-orange-300 hover:bg-orange-500/20 transition-all"
+          >
+            Clear Chat
+          </button>
         </div>
-      )}
-
-      <div className="p-4 border-t border-orange-500/10">
         <div className="flex gap-2 items-end">
           <div className="flex-1 relative">
             <textarea
