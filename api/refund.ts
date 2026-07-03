@@ -3,7 +3,8 @@ import { getAstridWallet } from './_astrid.js';
 const redis = new Redis({ url: process.env.KV_REST_API_URL!, token: process.env.KV_REST_API_TOKEN! });
 
 export default async function handler(req: any, res: any) {
-  const { id } = req.body;
+  const { id } = req.body ?? {};
+  if (!id) return res.status(400).json({ error: 'Missing id' });
   const raw = await redis.hget('schedules', id);
   const s: any = typeof raw === 'string' ? JSON.parse(raw) : raw;
   if (!s || s.refunded) return res.status(400).json({ error: 'invalid or already refunded' });
