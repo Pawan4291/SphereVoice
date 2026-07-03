@@ -234,8 +234,7 @@ if (result.success) {
     break;
   }
   setScheduleDraft({ to: cmd.to, amount: cmd.amount, coinId: cmd.coinId ?? 'UCT' });
-  responseContent = '🗓️ Review and confirm the schedule below.';
-  break;
+  break; // no responseContent — modal handles the rest
 }
 
         case 'nametag': {
@@ -413,8 +412,11 @@ if (result.success) {
       {scheduleDraft && (
   <ScheduleModal
     initial={scheduleDraft}
-    onClose={() => setScheduleDraft(null)}
-    onScheduled={() => setScheduleDraft(null)}
+    onClose={() => { appendMsg({ role: 'assistant', content: '❌ Schedule cancelled.', status: 'error' }); setScheduleDraft(null); }}
+    onScheduled={(details) => {
+      appendMsg({ role: 'assistant', content: `✅ **Scheduled!**\n${details.amount} ${details.coinId} → ${details.to}, every ${details.intervalLabel}, ${details.totalCycles} times.\n\nCheck the **Schedule** tab to track it.`, status: 'success' });
+      setScheduleDraft(null);
+    }}
   />
 )}
     </div>

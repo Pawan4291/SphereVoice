@@ -16,7 +16,7 @@ const DURATION_PRESETS = [
 interface Props {
   initial: { to: string; amount: string; coinId: string };
   onClose: () => void;
-  onScheduled: () => void;
+  onScheduled: (details: any) => void;
 }
 
 export default function ScheduleModal({ initial, onClose, onScheduled }: Props) {
@@ -57,7 +57,7 @@ export default function ScheduleModal({ initial, onClose, onScheduled }: Props) 
           rule: { type: 'recurring', intervalMs, totalCycles },
         }),
       });
-      onScheduled();
+      onScheduled({ amount, coinId, to, intervalLabel: `${intervalNum} ${intervalUnit}`, totalCycles });
       onClose();
     } catch (e: any) {
       setError(e?.message ?? 'Failed to schedule');

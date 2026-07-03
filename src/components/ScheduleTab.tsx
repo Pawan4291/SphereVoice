@@ -91,13 +91,13 @@ export default function ScheduleTab() {
         </motion.button>
       </div>
 
-      {showForm && (
-        <ScheduleModal
-          initial={{ to: '', amount: '1', coinId: 'UCT', intervalMs: 120000, totalDurationMs: 600000 }}
-          onClose={() => setShowForm(false)}
-          onScheduled={load}
-        />
-      )}
+     {showForm && (
+  <ScheduleModal
+    initial={{ to: '', amount: '1', coinId: 'UCT' }}
+    onClose={() => setShowForm(false)}
+    onScheduled={() => { setShowForm(false); load(); }}
+  />
+)}
 
       {/* Running */}
       {running.length > 0 && (
@@ -124,9 +124,11 @@ export default function ScheduleTab() {
                       <span className="text-xs text-gray-500">→</span>
                       <span className="text-sm text-orange-400">{s.to}</span>
                     </div>
-                    <div className="text-xs text-gray-600 mt-1">
-                      Cycle {s.cyclesDone ?? 0} / {s.rule?.totalCycles ?? '?'} · every {Math.round((s.rule?.intervalMs ?? 0) / 1000)}s
-                    </div>
+                   <div className="text-xs text-gray-600 mt-1">
+  Cycle {s.cyclesDone ?? 0} / {s.rule?.totalCycles ?? '?'} · every {Math.round((s.rule?.intervalMs ?? 0)/1000)}s
+  <br />Created: {new Date(s.createdAt).toLocaleString()}
+  <br />Next: {new Date((s.lastRun ?? s.createdAt) + (s.rule?.intervalMs ?? 0)).toLocaleString()}
+</div>
                   </div>
                   <motion.button
                     onClick={() => cancelJob(s.id)}
