@@ -305,7 +305,7 @@ if (result.success) {
 
   const suggestions = [
     "What's my balance?",
-    "Mint 1000 UCT",
+    "Mint 10 UCT",
     "Show transaction history",
     "Schedule 5 UCT to @bob in 2 minutes",
   ];
@@ -387,12 +387,6 @@ if (result.success) {
           >
             ⚡ Quick Commands ⌄
           </button>
-          <button
-            onClick={clearChat}
-            className="flex items-center gap-1 text-xs px-3 py-1 text-orange-300 hover:text-orange-200 transition-all ml-auto flex-shrink-0"
-          >
-            🗑 Clear chat
-          </button>
           {showQuickCommands && suggestions.map((s) => (
             <button
               key={s}
@@ -402,6 +396,12 @@ if (result.success) {
               {s}
             </button>
           ))}
+          <button
+            onClick={clearChat}
+            className="flex items-center gap-1 text-xs px-3 py-1 text-orange-300 hover:text-orange-200 transition-all ml-auto flex-shrink-0"
+          >
+            🗑 Clear chat
+          </button>
         </div>
         <div className="flex gap-2 items-end">
           <div className="flex-1 relative">
