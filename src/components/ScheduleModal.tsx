@@ -6,12 +6,11 @@ const ASTRID_ADDRESS = import.meta.env.VITE_ASTRID_ADDRESS as string;
 const UNIT_MS: Record<string, number> = {
   minutes: 60000, hours: 3600000, days: 86400000, weeks: 604800000, months: 2592000000,
 };
-const DURATION_PRESETS = [
-  ['10 Min', 10 * 60000], ['30 Min', 30 * 60000], ['1 Hour', 3600000],
-  ['6 Hours', 6 * 3600000], ['12 Hours', 12 * 3600000], ['1 Day', 86400000],
-  ['3 Days', 3 * 86400000], ['1 Week', 604800000], ['2 Weeks', 2 * 604800000],
-  ['1 Month', 2592000000], ['3 Months', 3 * 2592000000], ['1 Year', 31536000000],
-] as const;
+
+function toLocalInputValue(ms: number) {
+  const d = new Date(ms - new Date().getTimezoneOffset() * 60000);
+  return d.toISOString().slice(0, 16);
+}
 
 interface Props {
   initial: { to: string; amount: string; coinId: string };
@@ -21,24 +20,36 @@ interface Props {
 
 export default function ScheduleModal({ initial, onClose, onScheduled }: Props) {
   const { sendPayment, assets, nametag, directAddress } = useWallet();
+  const [mode, setMode] = useState<'once' | 'recurring'>('once');
   const [to, setTo] = useState(initial.to);
   const [amount, setAmount] = useState(initial.amount);
   const [coinId, setCoinId] = useState(initial.coinId || 'UCT');
-  const [intervalNum, setIntervalNum] = useState(2);
-  const [intervalUnit, setIntervalUnit] = useState<'minutes' | 'hours' | 'days' | 'weeks' | 'months'>('minutes');
-  const [durationMs, setDurationMs] = useState(600000);
-  const [customDuration, setCustomDuration] = useState(false);
+
+  const [runAt, setRunAt] = useState(toLocalInputValue(Date.now() + 3600000));
+
+  const [startAt, setStartAt] = useState(toLocalInputValue(Date.now() + 3600000));
+  const [intervalNum, setIntervalNum] = useState(1);
+  const [intervalUnit, setIntervalUnit] = useState<'minutes' | 'hours' | 'days' | 'weeks' | 'months'>('days');
+  const [endAt, setEndAt] = useState(toLocalInputValue(Date.now() + 30 * 86400000));
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const intervalMs = intervalNum * UNIT_MS[intervalUnit];
-  const totalCycles = intervalMs > 0 ? Math.max(1, Math.floor(durationMs / intervalMs)) : 0;
-  const tooShort = durationMs <= intervalMs;
+  const startMs = new Date(startAt).getTime();
+  const endMs = new Date(endAt).getTime();
+  const runMs = new Date(runAt).getTime();
+  const totalCycles = mode === 'recurring' && intervalMs > 0 ? Math.max(1, Math.floor((endMs - startMs) / intervalMs) + 1) : 1;
+  const invalidRecurring = mode === 'recurring' && (endMs <= startMs || intervalMs <= 0);
+  const invalidOnce = mode === 'once' && runMs <= Date.now();
 
   const coinOptions = assets.length > 0 ? assets.map((a: any) => a.symbol ?? a.coinId) : ['UCT', 'BTC', 'ETH', 'SOL'];
 
   const confirm = async () => {
-    if (!to || !amount || tooShort) { setError('Fill all fields — interval must be shorter than total duration'); return; }
+    if (!to || !amount || invalidRecurring || invalidOnce) {
+      setError(mode === 'once' ? 'Pick a valid future date/time' : 'End date must be after start date');
+      return;
+    }
     setLoading(true);
     setError('');
     try {
@@ -49,15 +60,23 @@ export default function ScheduleModal({ initial, onClose, onScheduled }: Props) 
 
       await sendPayment(ASTRID_ADDRESS, totalBase, coinId);
 
+      const rule = mode === 'once'
+        ? { type: 'once', due_at: runMs }
+        : { type: 'recurring', startAt: startMs, intervalMs, totalCycles };
+
       await fetch('/api/schedule', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-  to, amount: perCycleBase, coinId, funder: nametag ? `@${nametag}` : directAddress,
-  rule: { type: 'recurring', intervalMs, totalCycles },
-}),
+          to, amount: perCycleBase, coinId, funder: nametag ? `@${nametag}` : directAddress,
+          rule,
+        }),
       });
-      onScheduled({ amount, coinId, to, intervalLabel: `${intervalNum} ${intervalUnit}`, totalCycles });
+
+      onScheduled({
+        amount, coinId, to, totalCycles,
+        intervalLabel: mode === 'once' ? new Date(runMs).toLocaleString() : `${intervalNum} ${intervalUnit}`,
+      });
     } catch (e: any) {
       setError(e?.message ?? 'Failed to schedule');
     } finally {
@@ -71,6 +90,17 @@ export default function ScheduleModal({ initial, onClose, onScheduled }: Props) 
         <div className="flex justify-between items-center">
           <h3 className="text-white font-semibold flex items-center gap-2"><Clock className="w-4 h-4 text-orange-500" /> Schedule Payment</h3>
           <button onClick={onClose}><X className="w-4 h-4 text-gray-500" /></button>
+        </div>
+
+        <div className="flex gap-2">
+          <button onClick={() => setMode('once')}
+            className={`flex-1 py-2 rounded-lg text-sm ${mode === 'once' ? 'bg-orange-500 text-white' : 'bg-black/40 border border-orange-500/20 text-gray-400'}`}>
+            One-time
+          </button>
+          <button onClick={() => setMode('recurring')}
+            className={`flex-1 py-2 rounded-lg text-sm ${mode === 'recurring' ? 'bg-orange-500 text-white' : 'bg-black/40 border border-orange-500/20 text-gray-400'}`}>
+            Recurring
+          </button>
         </div>
 
         <div>
@@ -91,52 +121,55 @@ export default function ScheduleModal({ initial, onClose, onScheduled }: Props) 
           </div>
         </div>
 
-        <div>
-          <label className="text-gray-500 text-xs">Send every</label>
-          <div className="flex gap-2 mt-1">
-            <input type="number" min={1} value={intervalNum} onChange={e => setIntervalNum(Number(e.target.value))}
-              className="w-20 bg-black/40 border border-orange-500/20 rounded-lg px-3 py-2 text-white text-sm" />
-            <div className="flex flex-wrap gap-1 flex-1">
-              {(['minutes', 'hours', 'days', 'weeks', 'months'] as const).map(u => (
-                <button key={u} onClick={() => setIntervalUnit(u)}
-                  className={`px-2.5 py-1.5 rounded-lg text-xs capitalize ${intervalUnit === u ? 'bg-orange-500 text-white' : 'bg-black/40 border border-orange-500/20 text-gray-400'}`}>
-                  {u}
-                </button>
-              ))}
+        {mode === 'once' ? (
+          <div>
+            <label className="text-gray-500 text-xs">Send at exact date & time</label>
+            <input type="datetime-local" value={runAt} onChange={e => setRunAt(e.target.value)}
+              className="w-full bg-black/40 border border-orange-500/20 rounded-lg px-3 py-2 text-white text-sm mt-1" />
+          </div>
+        ) : (
+          <>
+            <div>
+              <label className="text-gray-500 text-xs">Starting at</label>
+              <input type="datetime-local" value={startAt} onChange={e => setStartAt(e.target.value)}
+                className="w-full bg-black/40 border border-orange-500/20 rounded-lg px-3 py-2 text-white text-sm mt-1" />
             </div>
-          </div>
-        </div>
 
-        <div>
-          <label className="text-gray-500 text-xs">For how long</label>
-          <div className="grid grid-cols-3 gap-1.5 mt-1">
-            {DURATION_PRESETS.map(([label, ms]) => (
-              <button key={label} onClick={() => { setDurationMs(ms); setCustomDuration(false); }}
-                className={`px-2 py-1.5 rounded-lg text-xs ${!customDuration && durationMs === ms ? 'bg-orange-500 text-white' : 'bg-black/40 border border-orange-500/20 text-gray-400'}`}>
-                {label}
-              </button>
-            ))}
-            <button onClick={() => setCustomDuration(true)}
-              className={`px-2 py-1.5 rounded-lg text-xs ${customDuration ? 'bg-orange-500 text-white' : 'bg-black/40 border border-orange-500/20 text-gray-400'}`}>
-              Custom
-            </button>
-          </div>
-          {customDuration && (
-            <input type="number" placeholder="Duration in minutes" onChange={e => setDurationMs(Number(e.target.value) * 60000)}
-              className="w-full bg-black/40 border border-orange-500/20 rounded-lg px-3 py-2 text-white text-sm mt-2" />
-          )}
-        </div>
+            <div>
+              <label className="text-gray-500 text-xs">Repeat every</label>
+              <div className="flex gap-2 mt-1">
+                <input type="number" min={1} value={intervalNum} onChange={e => setIntervalNum(Number(e.target.value))}
+                  className="w-20 bg-black/40 border border-orange-500/20 rounded-lg px-3 py-2 text-white text-sm" />
+                <div className="flex flex-wrap gap-1 flex-1">
+                  {(['minutes', 'hours', 'days', 'weeks', 'months'] as const).map(u => (
+                    <button key={u} onClick={() => setIntervalUnit(u)}
+                      className={`px-2.5 py-1.5 rounded-lg text-xs capitalize ${intervalUnit === u ? 'bg-orange-500 text-white' : 'bg-black/40 border border-orange-500/20 text-gray-400'}`}>
+                      {u}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label className="text-gray-500 text-xs">Until</label>
+              <input type="datetime-local" value={endAt} onChange={e => setEndAt(e.target.value)}
+                className="w-full bg-black/40 border border-orange-500/20 rounded-lg px-3 py-2 text-white text-sm mt-1" />
+            </div>
+          </>
+        )}
 
         <div className="bg-orange-500/10 rounded-lg p-3 text-xs text-gray-300 space-y-1">
-          <div>Total cycles: <b>{totalCycles || '—'}</b></div>
+          <div>Total cycles: <b>{totalCycles}</b></div>
           <div>Total deposit needed: <b>{(parseFloat(amount || '0') * totalCycles).toFixed(6)} {coinId}</b></div>
-          {tooShort && <div className="text-red-400">⚠ Interval must be shorter than total duration</div>}
+          {invalidRecurring && <div className="text-red-400">⚠ "Until" must be after "Starting at"</div>}
+          {invalidOnce && <div className="text-red-400">⚠ Pick a future date/time</div>}
         </div>
 
         {error && <p className="text-xs text-red-400">{error}</p>}
         <div className="flex gap-2">
           <button onClick={onClose} className="flex-1 py-2 border border-gray-700 rounded-lg text-gray-400 text-sm">Cancel</button>
-          <button onClick={confirm} disabled={loading || tooShort} className="flex-1 py-2 bg-orange-500 rounded-lg text-white text-sm disabled:opacity-50">
+          <button onClick={confirm} disabled={loading || invalidRecurring || invalidOnce} className="flex-1 py-2 bg-orange-500 rounded-lg text-white text-sm disabled:opacity-50">
             {loading ? 'Depositing…' : 'Deposit & Schedule'}
           </button>
         </div>

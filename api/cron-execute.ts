@@ -3,11 +3,11 @@ import { getAstridWallet } from './_astrid.js';
 
 const redis = new Redis({ url: process.env.KV_REST_API_URL!, token: process.env.KV_REST_API_TOKEN! });
 
-function isDueNow(rule: any, cyclesDone: number, lastRun?: number) {
+function isDueNow(rule: any, cyclesDone: number, lastRun: number | undefined) {
   if (rule.type === 'recurring') {
     if ((cyclesDone ?? 0) >= rule.totalCycles) return false;
-    if (!lastRun) return true;
-    return Date.now() - lastRun >= rule.intervalMs;
+    if (lastRun) return Date.now() - lastRun >= rule.intervalMs;
+    return Date.now() >= (rule.startAt ?? 0);
   }
   if (rule.type === 'once') return rule.due_at <= Date.now();
   return false;

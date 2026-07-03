@@ -125,9 +125,14 @@ export default function ScheduleTab() {
                       <span className="text-sm text-orange-400">{s.to}</span>
                     </div>
                    <div className="text-xs text-gray-600 mt-1">
-  Cycle {s.cyclesDone ?? 0} / {s.rule?.totalCycles ?? '?'} · every {Math.round((s.rule?.intervalMs ?? 0)/1000)}s
-  <br />Created: {new Date(s.createdAt).toLocaleString()}
-  <br />Next: {new Date((s.lastRun ?? s.createdAt) + (s.rule?.intervalMs ?? 0)).toLocaleString()}
+  {s.rule?.type === 'once' ? (
+    <>Runs at: {new Date(s.rule.due_at).toLocaleString()}</>
+  ) : (
+    <>
+      Cycle {s.cyclesDone ?? 0} / {s.rule?.totalCycles ?? '?'} · every {Math.round((s.rule?.intervalMs ?? 0)/1000)}s
+      <br />Next: {new Date(s.lastRun ? s.lastRun + (s.rule?.intervalMs ?? 0) : (s.rule?.startAt ?? s.createdAt)).toLocaleString()}
+    </>
+  )}
 </div>
                   </div>
                   <motion.button
