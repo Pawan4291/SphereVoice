@@ -58,7 +58,6 @@ export default function ScheduleModal({ initial, onClose, onScheduled }: Props) 
         }),
       });
       onScheduled({ amount, coinId, to, intervalLabel: `${intervalNum} ${intervalUnit}`, totalCycles });
-      onClose();
     } catch (e: any) {
       setError(e?.message ?? 'Failed to schedule');
     } finally {

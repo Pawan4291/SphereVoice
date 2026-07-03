@@ -21,7 +21,6 @@ export async function getAstridWallet() {
   ...providers,
   network: 'testnet',
   mnemonic: process.env.ASTRID_MNEMONIC,
-  nametag: 'astrid',
 });
   cachedSphere = sphere;
   return sphere;
