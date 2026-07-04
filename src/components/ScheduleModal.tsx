@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { X, Clock } from 'lucide-react';
 import { useWallet } from '../context/WalletContext';
 
@@ -6,8 +6,6 @@ const ASTRID_ADDRESS = import.meta.env.VITE_ASTRID_ADDRESS as string;
 const UNIT_MS: Record<string, number> = {
   minutes: 60000, hours: 3600000, days: 86400000, weeks: 604800000, months: 2592000000,
 };
-
-
 
 function toLocalInputValue(ms: number) {
   const d = new Date(ms - new Date().getTimezoneOffset() * 60000);
@@ -36,10 +34,13 @@ export default function ScheduleModal({ initial, onClose, onScheduled }: Props) 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const runAtRef = useRef<HTMLInputElement>(null);
+  const endAtRef = useRef<HTMLInputElement>(null);
+
   const startMs = Date.now();
   const intervalMs = intervalNum * UNIT_MS[intervalUnit];
   const endMs = new Date(endAt).getTime();
- const runMs = new Date(runAt).getTime();
+  const runMs = new Date(runAt).getTime();
 
   const totalCycles = mode === 'recurring' && intervalMs > 0
     ? Math.max(1, Math.floor((endMs - startMs) / intervalMs) + 1)
@@ -51,7 +52,7 @@ export default function ScheduleModal({ initial, onClose, onScheduled }: Props) 
 
   const confirm = async () => {
     if (!to || !amount || invalidRecurring || invalidOnce) {
-      setError(mode === 'recurring' ? '"Repeat until" must be after now' : 'Fill all fields');
+      setError(mode === 'recurring' ? '"Repeat until" must be after now' : 'Pick a valid future date/time');
       return;
     }
     setLoading(true);
@@ -125,13 +126,19 @@ export default function ScheduleModal({ initial, onClose, onScheduled }: Props) 
           </div>
         </div>
 
-       {mode === 'once' ? (
-  <div>
-    <label className="text-gray-500 text-xs">Send at</label>
-    <input type="datetime-local" value={runAt} onChange={e => setRunAt(e.target.value)}
-      className="w-full bg-black/40 border border-orange-500/20 rounded-lg px-3 py-2 text-white text-sm mt-1" />
-  </div>
-) : (
+        {mode === 'once' ? (
+          <div>
+            <label className="text-gray-500 text-xs">Send at</label>
+            <input
+              type="datetime-local"
+              ref={runAtRef}
+              value={runAt}
+              onChange={e => setRunAt(e.target.value)}
+              onClick={() => runAtRef.current?.showPicker?.()}
+              className="w-full bg-black/40 border border-orange-500/20 rounded-lg px-3 py-2 text-white text-sm mt-1 [color-scheme:dark] cursor-pointer"
+            />
+          </div>
+        ) : (
           <>
             <div>
               <label className="text-gray-500 text-xs">Repeat every</label>
@@ -151,8 +158,14 @@ export default function ScheduleModal({ initial, onClose, onScheduled }: Props) 
 
             <div>
               <label className="text-gray-500 text-xs">Repeat until</label>
-              <input type="datetime-local" value={endAt} onChange={e => setEndAt(e.target.value)}
-                className="w-full bg-black/40 border border-orange-500/20 rounded-lg px-3 py-2 text-white text-sm mt-1" />
+              <input
+                type="datetime-local"
+                ref={endAtRef}
+                value={endAt}
+                onChange={e => setEndAt(e.target.value)}
+                onClick={() => endAtRef.current?.showPicker?.()}
+                className="w-full bg-black/40 border border-orange-500/20 rounded-lg px-3 py-2 text-white text-sm mt-1 [color-scheme:dark] cursor-pointer"
+              />
             </div>
           </>
         )}
