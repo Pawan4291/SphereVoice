@@ -24,6 +24,10 @@ export default function ScheduleModal({ initial, onClose, onScheduled }: Props) 
   const [runDate, setRunDate] = useState(nowPlus1h.toISOString().slice(0, 10));
   const [runTime, setRunTime] = useState(nowPlus1h.toTimeString().slice(0, 5));
 
+  const nowPlus5m = new Date(Date.now() + 300000);
+  const [startDate, setStartDate] = useState(nowPlus5m.toISOString().slice(0, 10));
+  const [startTime, setStartTime] = useState(nowPlus5m.toTimeString().slice(0, 5));
+
   const [intervalNum, setIntervalNum] = useState(1);
   const [intervalUnit, setIntervalUnit] = useState<'minutes' | 'hours' | 'days' | 'weeks' | 'months'>('days');
 
@@ -34,16 +38,16 @@ export default function ScheduleModal({ initial, onClose, onScheduled }: Props) 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const startMs = Date.now();
+  const startMs = new Date(`${startDate}T${startTime}`).getTime();
   const intervalMs = intervalNum * UNIT_MS[intervalUnit];
   const endMs = new Date(`${endDate}T${endTime}`).getTime();
   const runMs = new Date(`${runDate}T${runTime}`).getTime();
-useEffect(() => { setError(''); }, [to, amount, coinId, runDate, runTime, intervalNum, intervalUnit, endDate, endTime, mode]);
+useEffect(() => { setError(''); }, [to, amount, coinId, runDate, runTime, startDate, startTime, intervalNum, intervalUnit, endDate, endTime, mode]);
 
  const totalCycles = mode === 'recurring' && intervalMs > 0
     ? Math.max(1, Math.floor((endMs - startMs) / intervalMs) + 1)
     : 1;
- const invalidRecurring = mode === 'recurring' && (endMs <= startMs || intervalMs <= 0);
+const invalidRecurring = mode === 'recurring' && (endMs <= startMs || intervalMs <= 0 || startMs <= Date.now());
   const invalidOnce = mode === 'once' && runMs <= Date.now();
 
   const coinOptions = assets.length > 0 ? assets.map((a: any) => a.symbol ?? a.coinId) : ['UCT', 'BTC', 'ETH', 'SOL'];
@@ -137,6 +141,16 @@ useEffect(() => { setError(''); }, [to, amount, coinId, runDate, runTime, interv
           </div>
         ) : (
           <>
+            <div>
+              <label className="text-gray-500 text-xs">Start time (at the start time first payment will go)</label>
+              <div className="grid grid-cols-2 gap-2 mt-1">
+                <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
+                  className="bg-black/40 border border-orange-500/20 rounded-lg px-3 py-2 text-white text-sm [color-scheme:dark]" />
+                <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)}
+                  className="bg-black/40 border border-orange-500/20 rounded-lg px-3 py-2 text-white text-sm [color-scheme:dark]" />
+              </div>
+            </div>
+
             <div>
               <label className="text-gray-500 text-xs">Repeat every</label>
               <div className="flex gap-2 mt-1">

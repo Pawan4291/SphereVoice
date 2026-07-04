@@ -25,7 +25,9 @@ export default async function handler(req: any, res: any) {
 
   for (const s of schedules) {
     if (s.status !== 'pending') continue;
-    if (!isDueNow(s.rule, s.cyclesDone ?? 0, s.lastRun)) continue;
+    const due = isDueNow(s.rule, s.cyclesDone ?? 0, s.lastRun);
+    console.log('CHECK', s.id, 'status:', s.status, 'cyclesDone:', s.cyclesDone, 'lastRun:', s.lastRun, 'now:', Date.now(), 'diff:', s.lastRun ? Date.now() - s.lastRun : null, 'intervalMs:', s.rule?.intervalMs, 'due:', due);
+    if (!due) continue;
     try {
       const result = await sphere.payments.send({ recipient: s.to, amount: s.amount, coinId: s.coinId });
       s.cyclesDone = (s.cyclesDone ?? 0) + 1;
