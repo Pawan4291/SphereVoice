@@ -50,10 +50,10 @@ useEffect(() => { setError(''); }, [to, amount, coinId, runDate, runTime, interv
 
   const confirm = async () => {
     console.log('DEBUG runMs:', runMs, 'now:', Date.now(), 'diff:', runMs - Date.now(), 'invalidOnce:', invalidOnce, 'runDate:', runDate, 'runTime:', runTime);
-    if (!to || !amount || invalidRecurring || invalidOnce) {
-      setError(mode === 'recurring' ? '"Repeat until" must be after now' : 'Pick a valid future date/time');
-      return;
-    }
+    if (!to) { setError('Enter a recipient (e.g. @alice)'); return; }
+    if (!amount || parseFloat(amount) <= 0) { setError('Enter a valid amount'); return; }
+    if (invalidRecurring) { setError('"Repeat until" must be after now'); return; }
+    if (invalidOnce) { setError('Pick a valid future date/time'); return; }
     setLoading(true);
     setError('');
     try {
