@@ -29,6 +29,7 @@ export default function ScheduleTab() {
   const [schedules, setSchedules] = useState<any[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const load = () => fetch('/api/schedule').then(r => r.json()).then(setSchedules).catch(() => {});
 
@@ -157,27 +158,50 @@ export default function ScheduleTab() {
           <p className="text-xs text-gray-500 mb-2 uppercase tracking-wider">Cancelled ({cancelled.length})</p>
           <div className="space-y-2">
             {cancelled.map(s => (
-              <div key={s.id} className="flex items-center gap-3 p-3 bg-black/20 border border-gray-800 rounded-xl">
-                <div className="w-8 h-8 rounded-full bg-gray-500/10 flex items-center justify-center">
-                  <X className="w-4 h-4 text-gray-500" />
+              <div key={s.id} className="bg-black/20 border border-gray-800 rounded-xl overflow-hidden">
+                <div
+                  className="flex items-center gap-3 p-3 cursor-pointer"
+                  onClick={() => setExpandedId(expandedId === s.id ? null : s.id)}
+                >
+                  <div className="w-8 h-8 rounded-full bg-gray-500/10 flex items-center justify-center">
+                    <X className="w-4 h-4 text-gray-500" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-gray-400 font-mono">{formatAmount(s.amount, s.coinId)} → {s.to}</p>
+                    <p className="text-xs text-gray-600">
+                      {(s.cyclesDone ?? 0)} / {s.rule?.totalCycles ?? 1} sent
+                      {s.refunded ? ' · refunded' : ''} · tap for details
+                    </p>
+                  </div>
+                  {!s.refunded && (s.cyclesDone ?? 0) < (s.rule?.totalCycles ?? 1) && (
+                    <motion.button
+                      onClick={(e) => { e.stopPropagation(); refundJob(s.id); }}
+                      disabled={loadingId === s.id}
+                      whileHover={{ scale: 1.05 }}
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-orange-500/30 text-orange-400 text-xs disabled:opacity-40"
+                    >
+                      {loadingId === s.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCcw className="w-3.5 h-3.5" />}
+                      Refund
+                    </motion.button>
+                  )}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-gray-400 font-mono">{formatAmount(s.amount, s.coinId)} → {s.to}</p>
-                  <p className="text-xs text-gray-600">
-                   {(s.cyclesDone ?? 0)} / {s.rule?.totalCycles ?? 1} sent
-                    {s.refunded ? ' · refunded' : ''}
-                  </p>
-                </div>
-                {!s.refunded && (s.cyclesDone ?? 0) < (s.rule?.totalCycles ?? 1) && (
-                  <motion.button
-                    onClick={() => refundJob(s.id)}
-                    disabled={loadingId === s.id}
-                    whileHover={{ scale: 1.05 }}
-                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-orange-500/30 text-orange-400 text-xs disabled:opacity-40"
-                  >
-                    {loadingId === s.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCcw className="w-3.5 h-3.5" />}
-                    Refund
-                  </motion.button>
+                {expandedId === s.id && (
+                  <div className="px-4 pb-3 pt-1 border-t border-gray-800 space-y-1.5">
+                    <p className="text-xs text-gray-500">Created: {new Date(s.createdAt).toLocaleString()}</p>
+                    {(s.history ?? []).map((h: any, i: number) => (
+                      <p key={i} className="text-xs text-green-400">
+                        Payment {h.cycle}: {formatAmount(h.amount, s.coinId)} sent {new Date(h.timestamp).toLocaleString()} — {h.status}
+                        {h.txId && <a href={`https://unicitynetwork.github.io/smt-explorer/?tx=${h.txId}`} target="_blank" rel="noreferrer" className="text-orange-500 ml-1">↗</a>}
+                      </p>
+                    ))}
+                    {(!s.history || s.history.length === 0) && <p className="text-xs text-gray-600">No payments sent before cancellation</p>}
+                    {s.refunded && (
+                      <p className="text-xs text-yellow-400">
+                        Refunded {formatAmount(s.refundAmount ?? '0', s.coinId)} at {s.refundedAt ? new Date(s.refundedAt).toLocaleString() : 'unknown time'}
+                        {s.refundTxId && <a href={`https://unicitynetwork.github.io/smt-explorer/?tx=${s.refundTxId}`} target="_blank" rel="noreferrer" className="text-orange-500 ml-1">↗</a>}
+                      </p>
+                    )}
+                  </div>
                 )}
               </div>
             ))}
@@ -191,15 +215,31 @@ export default function ScheduleTab() {
           <p className="text-xs text-gray-500 mb-2 uppercase tracking-wider">Completed ({completed.length})</p>
           <div className="space-y-2">
             {completed.map(s => (
-              <div key={s.id} className="flex items-center gap-3 p-3 bg-black/20 border border-gray-800 rounded-xl opacity-70">
-                <div className="w-8 h-8 rounded-full bg-green-500/10 flex items-center justify-center">
-                  <CheckCircle2 className="w-4 h-4 text-green-400" />
+              <div key={s.id} className="bg-black/20 border border-gray-800 rounded-xl overflow-hidden opacity-90">
+                <div
+                  className="flex items-center gap-3 p-3 cursor-pointer"
+                  onClick={() => setExpandedId(expandedId === s.id ? null : s.id)}
+                >
+                  <div className="w-8 h-8 rounded-full bg-green-500/10 flex items-center justify-center">
+                    <CheckCircle2 className="w-4 h-4 text-green-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-gray-400 font-mono">{formatAmount(s.amount, s.coinId)} → {s.to}</p>
+                    <p className="text-xs text-gray-600">{s.cyclesDone} / {s.rule?.totalCycles} sent · tap for details</p>
+                  </div>
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${STATUS_STYLES[s.status]}`}>{s.status}</span>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-gray-400 font-mono">{formatAmount(s.amount, s.coinId)} → {s.to}</p>
-                  <p className="text-xs text-gray-600">{s.cyclesDone} / {s.rule?.totalCycles} sent</p>
-                </div>
-                <span className={`text-xs px-2 py-0.5 rounded-full ${STATUS_STYLES[s.status]}`}>{s.status}</span>
+                {expandedId === s.id && (
+                  <div className="px-4 pb-3 pt-1 border-t border-gray-800 space-y-1.5">
+                    <p className="text-xs text-gray-500">Created: {new Date(s.createdAt).toLocaleString()}</p>
+                    {(s.history ?? []).map((h: any, i: number) => (
+                      <p key={i} className="text-xs text-green-400">
+                        Payment {h.cycle}: {formatAmount(h.amount, s.coinId)} sent {new Date(h.timestamp).toLocaleString()} — {h.status}
+                        {h.txId && <a href={`https://unicitynetwork.github.io/smt-explorer/?tx=${h.txId}`} target="_blank" rel="noreferrer" className="text-orange-500 ml-1">↗</a>}
+                      </p>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
           </div>

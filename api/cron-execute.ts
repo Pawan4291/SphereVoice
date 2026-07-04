@@ -33,6 +33,8 @@ export default async function handler(req: any, res: any) {
       s.cyclesDone = (s.cyclesDone ?? 0) + 1;
       s.lastRun = Date.now();
       s.lastResult = result.status;
+      s.history = s.history ?? [];
+s.history.push({ cycle: s.cyclesDone, timestamp: Date.now(), amount: s.amount, status: result.status, txId: result.transferId ?? result.id });
       if (s.rule.type === 'once' || s.cyclesDone >= s.rule.totalCycles) s.status = 'executed';
       results.push({ id: s.id, status: 'sent', cyclesDone: s.cyclesDone });
     } catch (e: any) {

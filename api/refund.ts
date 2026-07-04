@@ -21,6 +21,9 @@ export default async function handler(req: any, res: any) {
   }
   s.refunded = true;
   s.status = 'cancelled';
+  s.refundedAt = Date.now();
+s.refundAmount = remaining;
+s.refundTxId = result.transferId ?? result.id;
   await redis.hset('schedules', { [id]: JSON.stringify(s) });
   res.status(200).json({ status: result.status, refunded: remaining });
 }
