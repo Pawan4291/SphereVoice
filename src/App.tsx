@@ -86,9 +86,9 @@ function HeroSection({ onStart }: { onStart: () => void }) {
         transition={{ duration: 1, type: 'spring', stiffness: 80 }}
         className="relative mb-8"
       >
-        <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-orange-400 to-orange-700 flex items-center justify-center shadow-2xl shadow-orange-500/30">
-          <Globe className="w-12 h-12 text-white" />
-        </div>
+       <div className="w-24 h-24 rounded-3xl overflow-hidden shadow-2xl shadow-orange-500/30">
+  <img src="/favicon.png" alt="SphereVoice" className="w-full h-full object-cover" />
+</div>
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
@@ -147,7 +147,7 @@ function HeroSection({ onStart }: { onStart: () => void }) {
       >
         {[
           { icon: '🔴', label: 'Real Testnet' },
-          { icon: '🤖', label: 'Astrid Agent' },
+         { icon: '🤖', label: 'Automation' },
           { icon: '💬', label: 'AI Chat' },
           { icon: '⚡', label: 'Instant Send' },
           { icon: '🗓️', label: 'Schedule' },
@@ -251,9 +251,9 @@ function AppShell() {
               onClick={() => setShowHero(true)}
               className="flex items-center gap-2 hover:opacity-80 transition-opacity"
             >
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-orange-500 to-orange-700 flex items-center justify-center">
-                <Globe className="w-4 h-4 text-white" />
-              </div>
+              <div className="w-8 h-8 rounded-xl overflow-hidden">
+  <img src="/favicon.png" alt="SphereVoice" className="w-full h-full object-cover" />
+</div>
               <span className="font-bold text-white text-lg tracking-tight">
                 Sphere<span className="text-orange-500">Voice</span>
               </span>
