@@ -281,7 +281,7 @@ const hexCoinId = matchedAsset?.coinId ?? KNOWN_COIN_IDS[coinId?.toUpperCase()] 
 
   // Execute a scheduled payment — defined with useCallback and stored in ref for stability
   const executeScheduledPayment = useCallback(async (payment: ScheduledPayment) => {
-    addAstridLog({ type: 'info', message: `Astrid woke up for payment ${payment.id.slice(0, 8)}…`, paymentId: payment.id });
+   addAstridLog({ type: 'info', message: `SphereVoice woke up for payment ${payment.id.slice(0, 8)}…`, paymentId: payment.id });
     addAstridLog({ type: 'budget_check', message: `Checking budget: need ${payment.amount} ${payment.coinId}`, paymentId: payment.id });
 
     if (!sphereRef.current) {

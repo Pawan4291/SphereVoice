@@ -20,7 +20,7 @@ const TABS: { id: TabId; label: string; icon: any; shortLabel: string }[] = [
   { id: 'balance', label: 'Balance', shortLabel: 'Balance', icon: TrendingUp },
   { id: 'history', label: 'History', shortLabel: 'History', icon: Clock },
   { id: 'schedule', label: 'Schedule', shortLabel: 'Schedule', icon: Calendar },
-  { id: 'astrid', label: 'Watch Astrid Work', shortLabel: 'Astrid', icon: Eye },
+  { id: 'astrid', label: 'Automation Log', shortLabel: 'Astrid', icon: Eye },
   { id: 'settings', label: 'Settings', shortLabel: 'Settings', icon: Settings },
 ];
 
@@ -135,7 +135,7 @@ function HeroSection({ onStart }: { onStart: () => void }) {
         transition={{ delay: 0.7, duration: 0.8 }}
         className="text-sm text-orange-500/60 mb-10 font-mono"
       >
-        Watch Astrid handle the rest — autonomously, on-chain
+        Watch SphereVoice handle the rest, autonomously and on-chain
       </motion.p>
 
       {/* Feature pills */}

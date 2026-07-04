@@ -230,7 +230,6 @@ export default function SettingsTab() {
         {[
           { label: 'SMT Explorer', href: 'https://unicitynetwork.github.io/smt-explorer/', desc: 'Verify transactions on-chain' },
           { label: 'Sphere SDK', href: 'https://github.com/unicity-sphere/sphere-sdk', desc: 'Developer docs' },
-          { label: 'Astrid Agent', href: 'https://github.com/unicity-astrid/astrid', desc: 'Autonomous agent framework' },
         ].map(link => (
           <a
             key={link.href}

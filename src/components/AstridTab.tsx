@@ -58,7 +58,7 @@ export default function AstridTab() {
             />
           </div>
           <div>
-            <h2 className="text-base font-semibold text-white">Astrid Agent</h2>
+            <h2 className="text-base font-semibold text-white">Automation Engine</h2>
             <div className="flex items-center gap-1.5">
               <motion.div
                 animate={{ scale: [1, 1.3, 1] }}
@@ -99,11 +99,11 @@ export default function AstridTab() {
               <Bot className="w-8 h-8 text-orange-500/30" />
             </motion.div>
             <div>
-              <p className="text-gray-500 mb-1">Astrid is on standby</p>
-              <p className="text-xs text-gray-700">Schedule a payment to watch Astrid work autonomously</p>
+              <p className="text-gray-500 mb-1">SphereVoice is on standby</p>
+              <p className="text-xs text-gray-700">Schedule a payment to watch SphereVoice work autonomously</p>
             </div>
             <div className="bg-black/40 border border-orange-500/10 rounded-xl p-4 text-left text-xs text-gray-600 space-y-1 max-w-xs">
-              <p className="text-orange-500 font-medium mb-2">What Astrid does:</p>
+              <p className="text-orange-500 font-medium mb-2">What happens automatically:</p>
               <p>① Checks wallet budget</p>
               <p>② Verifies approval policy</p>
               <p>③ Calls sphere.payments.send()</p>
@@ -173,16 +173,9 @@ export default function AstridTab() {
       <div className="p-4 border-t border-orange-500/10">
         <div className="flex items-center gap-2 text-xs text-gray-700">
           <AlertCircle className="w-3.5 h-3.5 text-orange-600" />
-          <span>Astrid runs autonomously with no human present once triggered. All actions are logged above.</span>
+          <span>SphereVoice runs autonomously with no human present once triggered. All actions are logged above.</span>
         </div>
-        <a
-          href="https://github.com/unicity-astrid/astrid"
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex items-center gap-1 text-xs text-orange-600 hover:text-orange-500 mt-1 transition-colors"
-        >
-          Astrid open-source repo <ExternalLink className="w-3 h-3" />
-        </a>
+       
       </div>
     </div>
   );

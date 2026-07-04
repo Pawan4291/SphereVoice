@@ -252,7 +252,7 @@ export default function ScheduleTab() {
         <div className="text-center py-12">
           <Calendar className="w-10 h-10 text-orange-500/20 mx-auto mb-3" />
           <p className="text-gray-600 text-sm">No scheduled payments yet</p>
-          <p className="text-gray-700 text-xs mt-1">Create one to let Astrid execute it automatically</p>
+<p className="text-gray-700 text-xs mt-1">Create one to let SphereVoice execute it automatically</p>
         </div>
       )}
 
