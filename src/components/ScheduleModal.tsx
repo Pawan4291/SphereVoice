@@ -7,12 +7,6 @@ const UNIT_MS: Record<string, number> = {
   minutes: 60000, hours: 3600000, days: 86400000, weeks: 604800000, months: 2592000000,
 };
 
-function toLocalInputValue(ms: number) {
-  const d = new Date(ms);
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
 interface Props {
   initial: { to: string; amount: string; coinId: string };
   onClose: () => void;
@@ -26,21 +20,24 @@ export default function ScheduleModal({ initial, onClose, onScheduled }: Props) 
   const [amount, setAmount] = useState(initial.amount);
   const [coinId, setCoinId] = useState(initial.coinId || 'UCT');
 
-  const [runAt, setRunAt] = useState(toLocalInputValue(Date.now() + 3600000));
+  const nowPlus1h = new Date(Date.now() + 3600000);
+  const [runDate, setRunDate] = useState(nowPlus1h.toISOString().slice(0, 10));
+  const [runTime, setRunTime] = useState(nowPlus1h.toTimeString().slice(0, 5));
 
   const [intervalNum, setIntervalNum] = useState(1);
   const [intervalUnit, setIntervalUnit] = useState<'minutes' | 'hours' | 'days' | 'weeks' | 'months'>('days');
-  const [endAt, setEndAt] = useState(toLocalInputValue(Date.now() + 30 * 86400000));
+
+  const plus30d = new Date(Date.now() + 30 * 86400000);
+  const [endDate, setEndDate] = useState(plus30d.toISOString().slice(0, 10));
+  const [endTime, setEndTime] = useState(plus30d.toTimeString().slice(0, 5));
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  
-
   const startMs = Date.now();
   const intervalMs = intervalNum * UNIT_MS[intervalUnit];
-  const endMs = new Date(endAt).getTime();
-  const runMs = new Date(runAt).getTime();
+  const endMs = new Date(`${endDate}T${endTime}`).getTime();
+  const runMs = new Date(`${runDate}T${runTime}`).getTime();
 
   const totalCycles = mode === 'recurring' && intervalMs > 0
     ? Math.max(1, Math.floor((endMs - startMs) / intervalMs) + 1)
@@ -129,12 +126,12 @@ export default function ScheduleModal({ initial, onClose, onScheduled }: Props) 
         {mode === 'once' ? (
           <div>
             <label className="text-gray-500 text-xs">Send at</label>
-           <input
-  type="datetime-local"
-  defaultValue={runAt}
-  onChange={e => setRunAt(e.target.value)}
-  className="w-full bg-black/40 border border-orange-500/20 rounded-lg px-3 py-2 text-white text-sm mt-1 [color-scheme:dark]"
-/>
+            <div className="grid grid-cols-2 gap-2 mt-1">
+              <input type="date" value={runDate} onChange={e => setRunDate(e.target.value)}
+                className="bg-black/40 border border-orange-500/20 rounded-lg px-3 py-2 text-white text-sm [color-scheme:dark]" />
+              <input type="time" value={runTime} onChange={e => setRunTime(e.target.value)}
+                className="bg-black/40 border border-orange-500/20 rounded-lg px-3 py-2 text-white text-sm [color-scheme:dark]" />
+            </div>
           </div>
         ) : (
           <>
@@ -156,12 +153,12 @@ export default function ScheduleModal({ initial, onClose, onScheduled }: Props) 
 
             <div>
               <label className="text-gray-500 text-xs">Repeat until</label>
-            <input
-  type="datetime-local"
-  defaultValue={endAt}
-  onChange={e => setEndAt(e.target.value)}
-  className="w-full bg-black/40 border border-orange-500/20 rounded-lg px-3 py-2 text-white text-sm mt-1 [color-scheme:dark]"
-/>
+              <div className="grid grid-cols-2 gap-2 mt-1">
+                <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)}
+                  className="bg-black/40 border border-orange-500/20 rounded-lg px-3 py-2 text-white text-sm [color-scheme:dark]" />
+                <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)}
+                  className="bg-black/40 border border-orange-500/20 rounded-lg px-3 py-2 text-white text-sm [color-scheme:dark]" />
+              </div>
             </div>
           </>
         )}
