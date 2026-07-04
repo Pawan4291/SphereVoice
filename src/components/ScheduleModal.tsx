@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Clock } from 'lucide-react';
 import { useWallet } from '../context/WalletContext';
 
@@ -38,11 +38,12 @@ export default function ScheduleModal({ initial, onClose, onScheduled }: Props) 
   const intervalMs = intervalNum * UNIT_MS[intervalUnit];
   const endMs = new Date(`${endDate}T${endTime}`).getTime();
   const runMs = new Date(`${runDate}T${runTime}`).getTime();
+useEffect(() => { setError(''); }, [to, amount, coinId, runDate, runTime, intervalNum, intervalUnit, endDate, endTime, mode]);
 
-  const totalCycles = mode === 'recurring' && intervalMs > 0
+ const totalCycles = mode === 'recurring' && intervalMs > 0
     ? Math.max(1, Math.floor((endMs - startMs) / intervalMs) + 1)
     : 1;
-  const invalidRecurring = mode === 'recurring' && (endMs <= startMs || intervalMs <= 0);
+ const invalidRecurring = mode === 'recurring' && (endMs <= startMs || intervalMs <= 0);
   const invalidOnce = mode === 'once' && runMs <= Date.now();
 
   const coinOptions = assets.length > 0 ? assets.map((a: any) => a.symbol ?? a.coinId) : ['UCT', 'BTC', 'ETH', 'SOL'];
