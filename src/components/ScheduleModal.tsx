@@ -7,14 +7,7 @@ const UNIT_MS: Record<string, number> = {
   minutes: 60000, hours: 3600000, days: 86400000, weeks: 604800000, months: 2592000000,
 };
 
-const ONCE_PRESETS: [string, number][] = [
-  ['In 5 min', 5 * 60000],
-  ['In 30 min', 30 * 60000],
-  ['In 1 hour', 3600000],
-  ['In 6 hours', 6 * 3600000],
-  ['Tomorrow', 86400000],
-  ['In 1 week', 604800000],
-];
+
 
 function toLocalInputValue(ms: number) {
   const d = new Date(ms - new Date().getTimezoneOffset() * 60000);
@@ -34,7 +27,7 @@ export default function ScheduleModal({ initial, onClose, onScheduled }: Props) 
   const [amount, setAmount] = useState(initial.amount);
   const [coinId, setCoinId] = useState(initial.coinId || 'UCT');
 
-  const [onceDelay, setOnceDelay] = useState(3600000);
+  const [runAt, setRunAt] = useState(toLocalInputValue(Date.now() + 3600000));
 
   const [intervalNum, setIntervalNum] = useState(1);
   const [intervalUnit, setIntervalUnit] = useState<'minutes' | 'hours' | 'days' | 'weeks' | 'months'>('days');
@@ -46,17 +39,18 @@ export default function ScheduleModal({ initial, onClose, onScheduled }: Props) 
   const startMs = Date.now();
   const intervalMs = intervalNum * UNIT_MS[intervalUnit];
   const endMs = new Date(endAt).getTime();
-  const runMs = Date.now() + onceDelay;
+ const runMs = new Date(runAt).getTime();
 
   const totalCycles = mode === 'recurring' && intervalMs > 0
     ? Math.max(1, Math.floor((endMs - startMs) / intervalMs) + 1)
     : 1;
   const invalidRecurring = mode === 'recurring' && (endMs <= startMs || intervalMs <= 0);
+  const invalidOnce = mode === 'once' && runMs <= Date.now();
 
   const coinOptions = assets.length > 0 ? assets.map((a: any) => a.symbol ?? a.coinId) : ['UCT', 'BTC', 'ETH', 'SOL'];
 
   const confirm = async () => {
-    if (!to || !amount || invalidRecurring) {
+    if (!to || !amount || invalidRecurring || invalidOnce) {
       setError(mode === 'recurring' ? '"Repeat until" must be after now' : 'Fill all fields');
       return;
     }
@@ -131,19 +125,13 @@ export default function ScheduleModal({ initial, onClose, onScheduled }: Props) 
           </div>
         </div>
 
-        {mode === 'once' ? (
-          <div>
-            <label className="text-gray-500 text-xs">Send</label>
-            <div className="grid grid-cols-3 gap-1.5 mt-1">
-              {ONCE_PRESETS.map(([label, ms]) => (
-                <button key={label} onClick={() => setOnceDelay(ms)}
-                  className={`px-2 py-1.5 rounded-lg text-xs ${onceDelay === ms ? 'bg-orange-500 text-white' : 'bg-black/40 border border-orange-500/20 text-gray-400'}`}>
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : (
+       {mode === 'once' ? (
+  <div>
+    <label className="text-gray-500 text-xs">Send at</label>
+    <input type="datetime-local" value={runAt} onChange={e => setRunAt(e.target.value)}
+      className="w-full bg-black/40 border border-orange-500/20 rounded-lg px-3 py-2 text-white text-sm mt-1" />
+  </div>
+) : (
           <>
             <div>
               <label className="text-gray-500 text-xs">Repeat every</label>
@@ -173,12 +161,13 @@ export default function ScheduleModal({ initial, onClose, onScheduled }: Props) 
           <div>Total cycles: <b>{totalCycles}</b></div>
           <div>Total deposit needed: <b>{(parseFloat(amount || '0') * totalCycles).toFixed(6)} {coinId}</b></div>
           {invalidRecurring && <div className="text-red-400">⚠ "Repeat until" must be after now</div>}
+          {invalidOnce && <div className="text-red-400">⚠ Pick a future date/time</div>}
         </div>
 
         {error && <p className="text-xs text-red-400">{error}</p>}
         <div className="flex gap-2">
           <button onClick={onClose} className="flex-1 py-2 border border-gray-700 rounded-lg text-gray-400 text-sm">Cancel</button>
-          <button onClick={confirm} disabled={loading || invalidRecurring} className="flex-1 py-2 bg-orange-500 rounded-lg text-white text-sm disabled:opacity-50">
+          <button onClick={confirm} disabled={loading || invalidRecurring || invalidOnce} className="flex-1 py-2 bg-orange-500 rounded-lg text-white text-sm disabled:opacity-50">
             {loading ? 'Depositing…' : 'Deposit & Schedule'}
           </button>
         </div>
