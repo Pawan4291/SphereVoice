@@ -20,20 +20,17 @@ export default function ScheduleModal({ initial, onClose, onScheduled }: Props) 
   const [amount, setAmount] = useState(initial.amount);
   const [coinId, setCoinId] = useState(initial.coinId || 'UCT');
 
-  const nowPlus1h = new Date(Date.now() + 3600000);
-  const [runDate, setRunDate] = useState(nowPlus1h.toISOString().slice(0, 10));
-  const [runTime, setRunTime] = useState(nowPlus1h.toTimeString().slice(0, 5));
-
-  const nowPlus5m = new Date(Date.now() + 300000);
-  const [startDate, setStartDate] = useState(nowPlus5m.toISOString().slice(0, 10));
-  const [startTime, setStartTime] = useState(nowPlus5m.toTimeString().slice(0, 5));
+ const nowPlus10m = new Date(Date.now() + 600000);
+  const [runDate, setRunDate] = useState(nowPlus10m.toISOString().slice(0, 10));
+  const [runTime, setRunTime] = useState(nowPlus10m.toTimeString().slice(0, 5));
+  const [startDate, setStartDate] = useState(nowPlus10m.toISOString().slice(0, 10));
+  const [startTime, setStartTime] = useState(nowPlus10m.toTimeString().slice(0, 5));
 
   const [intervalNum, setIntervalNum] = useState(1);
   const [intervalUnit, setIntervalUnit] = useState<'minutes' | 'hours' | 'days' | 'weeks' | 'months'>('days');
 
-  const plus30d = new Date(Date.now() + 30 * 86400000);
-  const [endDate, setEndDate] = useState(plus30d.toISOString().slice(0, 10));
-  const [endTime, setEndTime] = useState(plus30d.toTimeString().slice(0, 5));
+  const [endDate, setEndDate] = useState(nowPlus10m.toISOString().slice(0, 10));
+  const [endTime, setEndTime] = useState('23:59');
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -48,8 +45,8 @@ useEffect(() => { setError(''); }, [to, amount, coinId, runDate, runTime, startD
     ? Math.max(1, Math.floor((endMs - startMs) / intervalMs) + 1)
     : 1;
 const MIN_INTERVAL_MS = 300000; // 5 minutes, matches cron-job.org's 60s polling reliability floor
-  const invalidRecurring = mode === 'recurring' && (endMs <= startMs || intervalMs <= 0 || startMs <= Date.now() || intervalMs < MIN_INTERVAL_MS);
-  const invalidOnce = mode === 'once' && runMs <= Date.now();
+ const invalidRecurring = mode === 'recurring' && (endMs <= startMs || intervalMs <= 0 || startMs < Date.now() + 600000 || intervalMs < MIN_INTERVAL_MS);
+  const invalidOnce = mode === 'once' && runMs < Date.now() + 600000;
 
   const coinOptions = assets.length > 0 ? assets.map((a: any) => a.symbol ?? a.coinId) : ['UCT', 'BTC', 'ETH', 'SOL'];
 
@@ -123,11 +120,32 @@ const MIN_INTERVAL_MS = 300000; // 5 minutes, matches cron-job.org's 60s polling
           <div className="flex gap-2 mt-1">
             <input value={amount} onChange={e => setAmount(e.target.value)}
               className="flex-1 bg-black/40 border border-orange-500/20 rounded-lg px-3 py-2 text-white text-sm" />
+            <button
+              onClick={() => {
+                const asset = assets.find((a: any) => a.symbol?.toUpperCase() === coinId.toUpperCase());
+                if (asset) {
+                  const decimals = asset.decimals ?? 18;
+                  const human = Number(BigInt(asset.totalAmount ?? '0')) / (10 ** decimals);
+                  setAmount(human.toString());
+                }
+              }}
+              className="px-3 py-2 bg-orange-500/10 border border-orange-500/20 rounded-lg text-orange-400 text-xs whitespace-nowrap"
+            >
+              Max
+            </button>
             <select value={coinId} onChange={e => setCoinId(e.target.value)}
               className="bg-black/40 border border-orange-500/20 rounded-lg px-3 py-2 text-orange-400 text-sm">
               {coinOptions.map((c: string) => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
+          <p className="text-xs text-gray-600 mt-1">
+            Available: {(() => {
+              const asset = assets.find((a: any) => a.symbol?.toUpperCase() === coinId.toUpperCase());
+              if (!asset) return '0';
+              const decimals = asset.decimals ?? 18;
+              return (Number(BigInt(asset.totalAmount ?? '0')) / (10 ** decimals)).toString();
+            })()} {coinId}
+          </p>
         </div>
 
         {mode === 'once' ? (
@@ -139,11 +157,11 @@ const MIN_INTERVAL_MS = 300000; // 5 minutes, matches cron-job.org's 60s polling
               <input type="time" value={runTime} onChange={e => setRunTime(e.target.value)}
                 className="bg-black/40 border border-orange-500/20 rounded-lg px-3 py-2 text-white text-sm [color-scheme:dark]" />
             </div>
-            <p className="text-xs text-gray-600 mt-1">ⓘ Astrid checks every ~60s, so payment may execute up to a minute after this time</p>
+            <p className="text-xs text-gray-600 mt-1">ⓘ Payment may take 2-3 minutes to reach the destination wallet after this time</p>
           </div>
         ) : (
           <>
-            <div>
+           <div>
               <label className="text-gray-500 text-xs">Start time (at the start time first payment will go)</label>
               <div className="grid grid-cols-2 gap-2 mt-1">
                 <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
@@ -151,6 +169,7 @@ const MIN_INTERVAL_MS = 300000; // 5 minutes, matches cron-job.org's 60s polling
                 <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)}
                   className="bg-black/40 border border-orange-500/20 rounded-lg px-3 py-2 text-white text-sm [color-scheme:dark]" />
               </div>
+              <p className="text-xs text-gray-600 mt-1">ⓘ Payment may take 2-3 minutes to reach the destination wallet after this time</p>
             </div>
 
             <div>
@@ -173,6 +192,7 @@ const MIN_INTERVAL_MS = 300000; // 5 minutes, matches cron-job.org's 60s polling
               <label className="text-gray-500 text-xs">Repeat until</label>
               <div className="grid grid-cols-2 gap-2 mt-1">
                 <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)}
+                  max={new Date(new Date(startDate).getFullYear(), new Date(startDate).getMonth() + 1, 0).toISOString().slice(0, 10)}
                   className="bg-black/40 border border-orange-500/20 rounded-lg px-3 py-2 text-white text-sm [color-scheme:dark]" />
                 <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)}
                   className="bg-black/40 border border-orange-500/20 rounded-lg px-3 py-2 text-white text-sm [color-scheme:dark]" />
@@ -185,8 +205,8 @@ const MIN_INTERVAL_MS = 300000; // 5 minutes, matches cron-job.org's 60s polling
           <div>Total cycles: <b>{totalCycles}</b></div>
           <div>Total deposit needed: <b>{(parseFloat(amount || '0') * totalCycles).toFixed(6)} {coinId}</b></div>
           {mode === 'recurring' && intervalMs > 0 && intervalMs < 300000 && <div className="text-red-400">⚠ Minimum interval is 5 minutes for reliable execution</div>}
-{invalidRecurring && intervalMs >= 300000 && <div className="text-red-400">⚠ "Repeat until" must be after now</div>}
-          {invalidOnce && <div className="text-red-400">⚠ Pick a future date/time</div>}
+{invalidRecurring && intervalMs >= 300000 && <div className="text-red-400">⚠ Start time must be at least 10 minutes from now, and "Repeat until" must be after start</div>}
+          {invalidOnce && <div className="text-red-400">⚠ Pick a time at least 10 minutes from now</div>}
         </div>
 
         {error && <p className="text-xs text-red-400">{error}</p>}
