@@ -1,4 +1,3 @@
-```markdown
 # SphereVoice
 
 Talk to your Unicity wallet in plain English — SphereVoice parses natural-language commands, executes real transactions on Unicity testnet2, and can autonomously execute scheduled/recurring payments server-side, 24/7, with no human present once funded.
@@ -16,17 +15,15 @@ Built for the Unicity Sphere Agents platform: [sphere.unicity.network/agents/cus
 
 ## Architecture
 
-```
 Browser (Sphere Connect client)
-  → /api/parse        (LLM: English → structured JSON command)
-  → sphere.intent()   (send / mint, requires wallet approval)
-  → /api/schedule     (Vercel + Upstash Redis: stores schedule records)
-  → /api/cron-execute (triggered every minute by an external cron; runs the
-                        server-side wallet, checks due schedules, sends real
-                        payments, no human present)
-  → /api/refund       (refunds unused cycles from a cancelled schedule)
-  → /api/activity     (global log of instant sends/mints, shown in Automation Log)
-```
+-> /api/parse        (LLM: English -> structured JSON command)
+-> sphere.intent()   (send / mint, requires wallet approval)
+-> /api/schedule     (Vercel + Upstash Redis: stores schedule records)
+-> /api/cron-execute (triggered every minute by an external cron; runs the
+server-side wallet, checks due schedules, sends real
+payments, no human present)
+-> /api/refund       (refunds unused cycles from a cancelled schedule)
+-> /api/activity     (global log of instant sends/mints, shown in Automation Log)
 
 ## SDK primitives used
 
@@ -39,12 +36,10 @@ Browser (Sphere Connect client)
 
 ## Run instructions (against testnet2)
 
-```bash
 npm install
 npm run dev
-```
 
-Required environment variables (Vercel → Environment Variables):
+Required environment variables (Vercel -> Environment Variables):
 
 | Variable | Purpose |
 |---|---|
@@ -74,4 +69,3 @@ Scheduled/recurring payment execution runs via `/api/cron-execute` with no human
 - Sphere SDK: https://github.com/unicity-sphere/sphere-sdk
 - SMT Explorer: https://unicitynetwork.github.io/smt-explorer/
 - Testnet faucet: https://faucet.unicity.network/faucet/
-```
