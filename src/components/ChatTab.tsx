@@ -277,13 +277,17 @@ case 'schedule_history': {
     const running = all.filter((s: any) => s.status === 'pending').length;
     const completed = all.filter((s: any) => s.status === 'executed').length;
     const cancelled = all.filter((s: any) => s.status === 'cancelled').length;
+    const failed = all.filter((s: any) => s.status === 'failed').length;
     if (all.length === 0) {
       responseContent = '🗓️ No scheduled payments yet.';
     } else {
-      const lines = all.slice(0, 5).map((s: any) =>
-        `• ${s.status.toUpperCase()} — ${s.amount} ${s.coinId} → ${s.to} (${s.cyclesDone ?? 0}/${s.rule?.totalCycles ?? 1} sent)`
-      );
-      responseContent = `🗓️ **Schedule Summary**\nRunning: ${running} · Completed: ${completed} · Cancelled: ${cancelled}\n\n${lines.join('\n')}\n\nFull details in the **Schedule** tab.`;
+      const sorted = [...all].sort((a: any, b: any) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
+      const lines = sorted.slice(0, 5).map((s: any) => {
+        const sAsset = assets.find((a: any) => a.symbol === s.coinId || a.coinId === s.coinId);
+        const sDecimals = sAsset?.decimals ?? 18;
+        return `• ${s.status.toUpperCase()} — ${formatAmount(s.amount, s.coinId, sDecimals)} → ${s.to} (${s.cyclesDone ?? 0}/${s.rule?.totalCycles ?? 1} sent)`;
+      });
+      responseContent = `🗓️ **Schedule Summary**\nRunning: ${running} · Completed: ${completed} · Cancelled: ${cancelled}${failed ? ` · Failed: ${failed}` : ''}\n\n${lines.join('\n')}\n\nFull details in the **Schedule** tab.`;
     }
   } catch (err: any) {
     responseContent = `❌ Schedule fetch failed: ${err.message}`;
