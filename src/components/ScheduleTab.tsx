@@ -164,11 +164,11 @@ export default function ScheduleTab() {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-gray-400 font-mono">{formatAmount(s.amount, s.coinId)} → {s.to}</p>
                   <p className="text-xs text-gray-600">
-                    {(s.cyclesDone ?? 0)} / {s.rule?.totalCycles ?? '?'} sent
+                   {(s.cyclesDone ?? 0)} / {s.rule?.totalCycles ?? 1} sent
                     {s.refunded ? ' · refunded' : ''}
                   </p>
                 </div>
-                {!s.refunded && (s.cyclesDone ?? 0) < (s.rule?.totalCycles ?? 0) && (
+                {!s.refunded && (s.cyclesDone ?? 0) < (s.rule?.totalCycles ?? 1) && (
                   <motion.button
                     onClick={() => refundJob(s.id)}
                     disabled={loadingId === s.id}
