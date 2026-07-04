@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bot, CheckCircle2, XCircle, AlertCircle, Info, DollarSign, Shield, ExternalLink, Zap } from 'lucide-react';
 import { useWallet } from '../context/WalletContext';
@@ -35,12 +35,28 @@ function timeStr(ts: number): string {
 }
 
 export default function AstridTab() {
-  const { astridLog, scheduledPayments } = useWallet();
+  const [schedules, setSchedules] = useState<any[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [astridLog]);
+    const load = () => fetch('/api/schedule').then(r => r.json()).then(setSchedules).catch(() => {});
+    load();
+    const iv = setInterval(load, 10000);
+    return () => clearInterval(iv);
+  }, []);
+
+  const astridLog = schedules.flatMap((s: any) =>
+    (s.history ?? []).map((h: any) => ({
+      id: `${s.id}-${h.cycle ?? h.timestamp}`,
+      timestamp: h.timestamp,
+      type: h.status === 'failed' ? 'error' : 'confirmed',
+      message: `${h.status === 'failed' ? 'Failed' : 'Sent'} ${h.amount} ${s.coinId} → ${s.to}`,
+      txId: h.txId,
+      smtLink: h.txId ? `https://unicitynetwork.github.io/smt-explorer/?tx=${h.txId}` : undefined,
+    }))
+  ).sort((a: any, b: any) => b.timestamp - a.timestamp);
+
+  const scheduledPayments = schedules;
 
   return (
     <div className="flex flex-col h-full">
