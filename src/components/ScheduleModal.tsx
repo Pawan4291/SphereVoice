@@ -129,12 +129,12 @@ export default function ScheduleModal({ initial, onClose, onScheduled }: Props) 
         {mode === 'once' ? (
           <div>
             <label className="text-gray-500 text-xs">Send at</label>
-            <input
-              type="datetime-local"
-              value={runAt}
-              onChange={e => setRunAt(e.target.value)}
-              className="w-full bg-black/40 border border-orange-500/20 rounded-lg px-3 py-2 text-white text-sm mt-1 [color-scheme:dark]"
-            />
+           <input
+  type="datetime-local"
+  defaultValue={runAt}
+  onBlur={e => setRunAt(e.target.value)}
+  className="w-full bg-black/40 border border-orange-500/20 rounded-lg px-3 py-2 text-white text-sm mt-1 [color-scheme:dark]"
+/>
           </div>
         ) : (
           <>
@@ -156,12 +156,12 @@ export default function ScheduleModal({ initial, onClose, onScheduled }: Props) 
 
             <div>
               <label className="text-gray-500 text-xs">Repeat until</label>
-              <input
-                type="datetime-local"
-                value={endAt}
-                onChange={e => setEndAt(e.target.value)}
-                className="w-full bg-black/40 border border-orange-500/20 rounded-lg px-3 py-2 text-white text-sm mt-1 [color-scheme:dark]"
-              />
+             <input
+  type="datetime-local"
+  defaultValue={endAt}
+  onBlur={e => setEndAt(e.target.value)}
+  className="w-full bg-black/40 border border-orange-500/20 rounded-lg px-3 py-2 text-white text-sm mt-1 [color-scheme:dark]"
+/>
             </div>
           </>
         )}
