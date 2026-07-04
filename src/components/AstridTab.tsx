@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bot, CheckCircle2, XCircle, AlertCircle, Info, DollarSign, Shield, ExternalLink, Zap } from 'lucide-react';
-import { useWallet } from '../context/WalletContext';
 
 const ENTRY_ICONS: Record<string, any> = {
   budget_check: DollarSign,
@@ -34,29 +33,65 @@ function timeStr(ts: number): string {
   return new Date(ts).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
 
+function formatAmt(raw: string, symbol = 'UCT'): string {
+  try {
+    const n = BigInt(raw);
+    const d = 1_000_000_000_000_000_000n;
+    const w = n / d, f = n % d;
+    return f === 0n ? `${w} ${symbol}` : `${w}.${f.toString().padStart(18, '0').replace(/0+$/, '')} ${symbol}`;
+  } catch {
+    return `${raw} ${symbol}`;
+  }
+}
+
+interface LogEntry {
+  id: string;
+  timestamp: number;
+  type: string;
+  message: string;
+  txId?: string;
+  smtLink?: string;
+}
+
 export default function AstridTab() {
   const [schedules, setSchedules] = useState<any[]>([]);
+  const [activity, setActivity] = useState<any[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const load = () => fetch('/api/schedule').then(r => r.json()).then(setSchedules).catch(() => {});
+    const load = () => {
+      fetch('/api/schedule').then(r => r.json()).then(setSchedules).catch(() => {});
+      fetch('/api/activity').then(r => r.json()).then(setActivity).catch(() => setActivity([]));
+    };
     load();
     const iv = setInterval(load, 10000);
     return () => clearInterval(iv);
   }, []);
 
-  const astridLog = schedules.flatMap((s: any) =>
+  const scheduleEntries: LogEntry[] = schedules.flatMap((s: any) =>
     (s.history ?? []).map((h: any) => ({
-      id: `${s.id}-${h.cycle ?? h.timestamp}`,
+      id: `sched-${s.id}-${h.cycle ?? h.timestamp}`,
       timestamp: h.timestamp,
       type: h.status === 'failed' ? 'error' : 'confirmed',
-      message: `${h.status === 'failed' ? 'Failed' : 'Sent'} ${h.amount} ${s.coinId} → ${s.to}`,
+      message: `${h.status === 'failed' ? 'Failed scheduled send' : 'Scheduled send'} ${formatAmt(h.amount, s.coinId)} → ${s.to}`,
       txId: h.txId,
       smtLink: h.txId ? `https://unicitynetwork.github.io/smt-explorer/?tx=${h.txId}` : undefined,
     }))
-  ).sort((a: any, b: any) => b.timestamp - a.timestamp);
+  );
 
-  const scheduledPayments = schedules;
+  const activityEntries: LogEntry[] = (activity ?? []).map((a: any) => ({
+    id: `act-${a.id}`,
+    timestamp: a.timestamp,
+    type: a.type === 'mint' ? 'sent' : 'confirmed',
+    message: `${a.type === 'mint' ? 'Minted' : 'Sent'} ${formatAmt(a.amount, a.coinId ?? 'UCT')}${a.to ? ` → ${a.to}` : ''}`,
+    txId: a.txId,
+    smtLink: a.txId ? `https://unicitynetwork.github.io/smt-explorer/?tx=${a.txId}` : undefined,
+  }));
+
+  const astridLog: LogEntry[] = [...scheduleEntries, ...activityEntries].sort((a, b) => b.timestamp - a.timestamp);
+
+  const executedCount = schedules.filter((p: any) => p.status === 'executed').length;
+  const pendingCount = schedules.filter((p: any) => p.status === 'pending').length;
 
   return (
     <div className="flex flex-col h-full">
@@ -82,7 +117,7 @@ export default function AstridTab() {
                 className={`w-1.5 h-1.5 rounded-full ${astridLog.length > 0 ? 'bg-green-400' : 'bg-gray-600'}`}
               />
               <span className="text-xs text-gray-500">
-                {astridLog.length > 0 ? 'Active' : 'Standby — waiting for scheduled payments'}
+                {astridLog.length > 0 ? 'Active' : 'Standby — waiting for activity'}
               </span>
             </div>
           </div>
@@ -92,8 +127,8 @@ export default function AstridTab() {
         <div className="grid grid-cols-3 gap-2">
           {[
             { label: 'Total Actions', val: astridLog.length },
-            { label: 'Payments Executed', val: scheduledPayments.filter(p => p.status === 'executed').length },
-            { label: 'Active Schedules', val: scheduledPayments.filter(p => p.status === 'pending').length },
+            { label: 'Payments Executed', val: executedCount },
+            { label: 'Active Schedules', val: pendingCount },
           ].map(({ label, val }) => (
             <div key={label} className="bg-black/40 border border-orange-500/10 rounded-lg p-2 text-center">
               <p className="text-lg font-bold text-orange-400">{val}</p>
@@ -116,7 +151,7 @@ export default function AstridTab() {
             </motion.div>
             <div>
               <p className="text-gray-500 mb-1">SphereVoice is on standby</p>
-              <p className="text-xs text-gray-700">Schedule a payment to watch SphereVoice work autonomously</p>
+              <p className="text-xs text-gray-700">Send, mint, or schedule a payment to watch SphereVoice work</p>
             </div>
             <div className="bg-black/40 border border-orange-500/10 rounded-xl p-4 text-left text-xs text-gray-600 space-y-1 max-w-xs">
               <p className="text-orange-500 font-medium mb-2">What happens automatically:</p>
@@ -129,7 +164,7 @@ export default function AstridTab() {
           </div>
         ) : (
           <AnimatePresence initial={false}>
-            {[...astridLog].reverse().map((entry, i) => {
+            {astridLog.map((entry, i) => {
               const Icon = ENTRY_ICONS[entry.type] ?? Info;
               const colorClass = ENTRY_COLORS[entry.type] ?? ENTRY_COLORS.info;
 
@@ -191,7 +226,6 @@ export default function AstridTab() {
           <AlertCircle className="w-3.5 h-3.5 text-orange-600" />
           <span>SphereVoice runs autonomously with no human present once triggered. All actions are logged above.</span>
         </div>
-       
       </div>
     </div>
   );

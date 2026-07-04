@@ -227,6 +227,7 @@ const hexCoinId = matchedAsset?.coinId ?? KNOWN_COIN_IDS[coinId?.toUpperCase()] 
       txId: result?.transferId ?? result?.id,
     };
     setTransfers(prev => [record, ...prev]);
+    fetch('/api/activity', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'send', amount, coinId, to: recipient, txId: record.txId }) }).catch(() => {});
     return { status: result?.status ?? 'completed', txId: record.txId };
   }, [refreshBalance, assets]);
 
@@ -252,6 +253,7 @@ const hexCoinId = matchedAsset?.coinId ?? KNOWN_COIN_IDS[coinId?.toUpperCase()] 
           txId: result?.tokenId ?? result?.id,
         };
         setTransfers(prev => [record, ...prev]);
+        fetch('/api/activity', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'mint', amount: amount.toString(), coinId, txId: record.txId }) }).catch(() => {});
         return { success: true, tokenId: result?.tokenId ?? result?.id };
       } else {
         return { success: false, error: result?.error ?? 'Mint failed' };
@@ -345,6 +347,7 @@ const hexCoinId = scheduledAsset?.coinId ?? KNOWN_COIN_IDS[payment.coinId?.toUpp
         txId,
       };
       setTransfers(prev => [record, ...prev]);
+      
       try { await refreshBalance(); } catch (_) {}
 
     } catch (err: any) {
