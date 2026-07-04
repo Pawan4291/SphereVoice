@@ -31,7 +31,9 @@ export default function ScheduleTab() {
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const load = () => fetch('/api/schedule').then(r => r.json()).then(setSchedules).catch(() => {});
+  const load = () => fetch('/api/schedule').then(r => r.json()).then(data => {
+  setSchedules([...data].sort((a: any, b: any) => (b.createdAt ?? 0) - (a.createdAt ?? 0)));
+}).catch(() => {});
 
   useEffect(() => {
     load();
