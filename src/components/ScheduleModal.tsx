@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { X, Clock } from 'lucide-react';
 import { useWallet } from '../context/WalletContext';
 
@@ -34,8 +34,7 @@ export default function ScheduleModal({ initial, onClose, onScheduled }: Props) 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const runAtRef = useRef<HTMLInputElement>(null);
-  const endAtRef = useRef<HTMLInputElement>(null);
+  
 
   const startMs = Date.now();
   const intervalMs = intervalNum * UNIT_MS[intervalUnit];
@@ -131,11 +130,9 @@ export default function ScheduleModal({ initial, onClose, onScheduled }: Props) 
             <label className="text-gray-500 text-xs">Send at</label>
             <input
               type="datetime-local"
-              ref={runAtRef}
               value={runAt}
               onChange={e => setRunAt(e.target.value)}
-              onClick={() => runAtRef.current?.showPicker?.()}
-              className="w-full bg-black/40 border border-orange-500/20 rounded-lg px-3 py-2 text-white text-sm mt-1 [color-scheme:dark] cursor-pointer"
+              className="w-full bg-black/40 border border-orange-500/20 rounded-lg px-3 py-2 text-white text-sm mt-1 [color-scheme:dark]"
             />
           </div>
         ) : (
@@ -160,11 +157,9 @@ export default function ScheduleModal({ initial, onClose, onScheduled }: Props) 
               <label className="text-gray-500 text-xs">Repeat until</label>
               <input
                 type="datetime-local"
-                ref={endAtRef}
                 value={endAt}
                 onChange={e => setEndAt(e.target.value)}
-                onClick={() => endAtRef.current?.showPicker?.()}
-                className="w-full bg-black/40 border border-orange-500/20 rounded-lg px-3 py-2 text-white text-sm mt-1 [color-scheme:dark] cursor-pointer"
+                className="w-full bg-black/40 border border-orange-500/20 rounded-lg px-3 py-2 text-white text-sm mt-1 [color-scheme:dark]"
               />
             </div>
           </>
