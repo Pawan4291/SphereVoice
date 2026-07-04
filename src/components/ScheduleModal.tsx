@@ -49,6 +49,7 @@ useEffect(() => { setError(''); }, [to, amount, coinId, runDate, runTime, interv
   const coinOptions = assets.length > 0 ? assets.map((a: any) => a.symbol ?? a.coinId) : ['UCT', 'BTC', 'ETH', 'SOL'];
 
   const confirm = async () => {
+    console.log('DEBUG runMs:', runMs, 'now:', Date.now(), 'diff:', runMs - Date.now(), 'invalidOnce:', invalidOnce, 'runDate:', runDate, 'runTime:', runTime);
     if (!to || !amount || invalidRecurring || invalidOnce) {
       setError(mode === 'recurring' ? '"Repeat until" must be after now' : 'Pick a valid future date/time');
       return;
