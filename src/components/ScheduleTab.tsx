@@ -154,6 +154,45 @@ export default function ScheduleTab() {
         </div>
       )}
 
+       {/* Completed */}
+      {completed.length > 0 && (
+        <div>
+          <p className="text-xs text-gray-500 mb-2 uppercase tracking-wider">Completed ({completed.length})</p>
+          <div className="space-y-2">
+            {completed.map(s => (
+              <div key={s.id} className="bg-black/20 border border-gray-800 rounded-xl overflow-hidden opacity-90">
+                <div
+                  className="flex items-center gap-3 p-3 cursor-pointer"
+                  onClick={() => setExpandedId(expandedId === s.id ? null : s.id)}
+                >
+                  <div className="w-8 h-8 rounded-full bg-green-500/10 flex items-center justify-center">
+                    <CheckCircle2 className="w-4 h-4 text-green-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-gray-400 font-mono">{formatAmount(s.amount, s.coinId)} → {s.to}</p>
+                    <p className="text-xs text-gray-600">{s.cyclesDone} / {s.rule?.totalCycles} sent · tap for details</p>
+                  </div>
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${STATUS_STYLES[s.status]}`}>{s.status}</span>
+                </div>
+                {expandedId === s.id && (
+                  <div className="px-4 pb-3 pt-1 border-t border-gray-800 space-y-1.5">
+                    <p className="text-xs text-gray-500">Created: {new Date(s.createdAt).toLocaleString()}</p>
+                    {(s.history ?? []).map((h: any, i: number) => (
+                      <p key={i} className="text-xs text-green-400">
+                        Payment {h.cycle}: {formatAmount(h.amount, s.coinId)} sent {new Date(h.timestamp).toLocaleString()} — {h.status}
+                        {h.txId && <a href={`https://unicitynetwork.github.io/smt-explorer/?tx=${h.txId}`} target="_blank" rel="noreferrer" className="text-orange-500 ml-1">↗</a>}
+                      </p>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+
+
       {/* Cancelled (with refund option) */}
       {cancelled.length > 0 && (
         <div>
@@ -211,42 +250,7 @@ export default function ScheduleTab() {
         </div>
       )}
 
-      {/* Completed */}
-      {completed.length > 0 && (
-        <div>
-          <p className="text-xs text-gray-500 mb-2 uppercase tracking-wider">Completed ({completed.length})</p>
-          <div className="space-y-2">
-            {completed.map(s => (
-              <div key={s.id} className="bg-black/20 border border-gray-800 rounded-xl overflow-hidden opacity-90">
-                <div
-                  className="flex items-center gap-3 p-3 cursor-pointer"
-                  onClick={() => setExpandedId(expandedId === s.id ? null : s.id)}
-                >
-                  <div className="w-8 h-8 rounded-full bg-green-500/10 flex items-center justify-center">
-                    <CheckCircle2 className="w-4 h-4 text-green-400" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-400 font-mono">{formatAmount(s.amount, s.coinId)} → {s.to}</p>
-                    <p className="text-xs text-gray-600">{s.cyclesDone} / {s.rule?.totalCycles} sent · tap for details</p>
-                  </div>
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${STATUS_STYLES[s.status]}`}>{s.status}</span>
-                </div>
-                {expandedId === s.id && (
-                  <div className="px-4 pb-3 pt-1 border-t border-gray-800 space-y-1.5">
-                    <p className="text-xs text-gray-500">Created: {new Date(s.createdAt).toLocaleString()}</p>
-                    {(s.history ?? []).map((h: any, i: number) => (
-                      <p key={i} className="text-xs text-green-400">
-                        Payment {h.cycle}: {formatAmount(h.amount, s.coinId)} sent {new Date(h.timestamp).toLocaleString()} — {h.status}
-                        {h.txId && <a href={`https://unicitynetwork.github.io/smt-explorer/?tx=${h.txId}`} target="_blank" rel="noreferrer" className="text-orange-500 ml-1">↗</a>}
-                      </p>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+     
 
       {schedules.length === 0 && !showForm && (
         <div className="text-center py-12">
