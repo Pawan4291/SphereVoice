@@ -159,8 +159,9 @@ const updateMsg = (id: string, patch: Partial<Message>) => {
         return;
       }
 
-      const cmd = await parseWithDeepSeek(userText);
-      let responseContent = '';
+     const cmd = await parseWithDeepSeek(userText);
+if (/schedule/i.test(userText) && /history|status|list/i.test(userText)) cmd.action = 'schedule_history';
+let responseContent = '';
       let responseStatus: Message['status'] = 'success';
 
 if (cmd.action === 'send' && cmd.schedule) cmd.action = 'schedule';
@@ -269,6 +270,27 @@ if (result.success) {
           }
           break;
         }
+
+case 'schedule_history': {
+  try {
+    const all = await fetch('/api/schedule').then(r => r.json());
+    const running = all.filter((s: any) => s.status === 'pending').length;
+    const completed = all.filter((s: any) => s.status === 'executed').length;
+    const cancelled = all.filter((s: any) => s.status === 'cancelled').length;
+    if (all.length === 0) {
+      responseContent = '🗓️ No scheduled payments yet.';
+    } else {
+      const lines = all.slice(0, 5).map((s: any) =>
+        `• ${s.status.toUpperCase()} — ${s.amount} ${s.coinId} → ${s.to} (${s.cyclesDone ?? 0}/${s.rule?.totalCycles ?? 1} sent)`
+      );
+      responseContent = `🗓️ **Schedule Summary**\nRunning: ${running} · Completed: ${completed} · Cancelled: ${cancelled}\n\n${lines.join('\n')}\n\nFull details in the **Schedule** tab.`;
+    }
+  } catch (err: any) {
+    responseContent = `❌ Schedule fetch failed: ${err.message}`;
+    responseStatus = 'error';
+  }
+  break;
+}
 
         case 'help':
         default: {
