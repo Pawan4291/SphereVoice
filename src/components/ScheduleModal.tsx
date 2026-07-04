@@ -8,8 +8,9 @@ const UNIT_MS: Record<string, number> = {
 };
 
 function toLocalInputValue(ms: number) {
-  const d = new Date(ms - new Date().getTimezoneOffset() * 60000);
-  return d.toISOString().slice(0, 16);
+  const d = new Date(ms);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 interface Props {
