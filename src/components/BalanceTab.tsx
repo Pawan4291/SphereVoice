@@ -119,9 +119,13 @@ React.useEffect(() => {
         />
         <div className="relative">
           <p className="text-sm text-gray-500 mb-1">Total Portfolio</p>
-         <p className="text-4xl font-bold text-white font-mono">
-            ${assets.reduce((sum, a: any) => sum + (a.fiatValueUsd ?? 0), 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </p>
+        <p className="text-4xl font-bold text-white font-mono">
+  ${assets.reduce((sum, a: any) => {
+    if (a.fiatValueUsd) return sum + a.fiatValueUsd;
+    if (a.symbol?.toUpperCase() === 'UCT') return sum + Number(formatAmount(a.totalAmount?.toString() ?? '0', a.decimals ?? 18));
+    return sum;
+  }, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+</p>
           <p className="text-sm text-orange-400 mt-1">Total value • Unicity Testnet</p>
           <div className="flex items-center gap-1.5 mt-3">
             <motion.div
