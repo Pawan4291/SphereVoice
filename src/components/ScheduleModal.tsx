@@ -47,7 +47,8 @@ useEffect(() => { setError(''); }, [to, amount, coinId, runDate, runTime, startD
  const totalCycles = mode === 'recurring' && intervalMs > 0
     ? Math.max(1, Math.floor((endMs - startMs) / intervalMs) + 1)
     : 1;
-const invalidRecurring = mode === 'recurring' && (endMs <= startMs || intervalMs <= 0 || startMs <= Date.now());
+const MIN_INTERVAL_MS = 300000; // 5 minutes, matches cron-job.org's 60s polling reliability floor
+  const invalidRecurring = mode === 'recurring' && (endMs <= startMs || intervalMs <= 0 || startMs <= Date.now() || intervalMs < MIN_INTERVAL_MS);
   const invalidOnce = mode === 'once' && runMs <= Date.now();
 
   const coinOptions = assets.length > 0 ? assets.map((a: any) => a.symbol ?? a.coinId) : ['UCT', 'BTC', 'ETH', 'SOL'];
@@ -138,6 +139,7 @@ const invalidRecurring = mode === 'recurring' && (endMs <= startMs || intervalMs
               <input type="time" value={runTime} onChange={e => setRunTime(e.target.value)}
                 className="bg-black/40 border border-orange-500/20 rounded-lg px-3 py-2 text-white text-sm [color-scheme:dark]" />
             </div>
+            <p className="text-xs text-gray-600 mt-1">ⓘ Astrid checks every ~60s, so payment may execute up to a minute after this time</p>
           </div>
         ) : (
           <>
@@ -182,7 +184,8 @@ const invalidRecurring = mode === 'recurring' && (endMs <= startMs || intervalMs
         <div className="bg-orange-500/10 rounded-lg p-3 text-xs text-gray-300 space-y-1">
           <div>Total cycles: <b>{totalCycles}</b></div>
           <div>Total deposit needed: <b>{(parseFloat(amount || '0') * totalCycles).toFixed(6)} {coinId}</b></div>
-          {invalidRecurring && <div className="text-red-400">⚠ "Repeat until" must be after now</div>}
+          {mode === 'recurring' && intervalMs > 0 && intervalMs < 300000 && <div className="text-red-400">⚠ Minimum interval is 5 minutes for reliable execution</div>}
+{invalidRecurring && intervalMs >= 300000 && <div className="text-red-400">⚠ "Repeat until" must be after now</div>}
           {invalidOnce && <div className="text-red-400">⚠ Pick a future date/time</div>}
         </div>
 
