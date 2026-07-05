@@ -23,6 +23,13 @@ export async function getAstridWallet() {
   mnemonic: process.env.ASTRID_MNEMONIC,
 });
  console.log('[Astrid Debug] trustBase:', !!sphere.getAggregator().getTrustBaseJson?.(), 'url:', sphere.getAggregator().getAggregatorUrl?.(), 'apiKey:', !!sphere.getAggregator().getApiKey?.());
+
+  try {
+    await sphere.payments.receive();
+  } catch (e) {
+    console.error('[Astrid] receive() failed:', e);
+  }
+
   cachedSphere = sphere;
   return sphere;
 }

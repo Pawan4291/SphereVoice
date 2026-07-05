@@ -25,21 +25,23 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 export default function ScheduleTab() {
-  const { status } = useWallet();
+  const { status, nametag, directAddress } = useWallet();
+  const myId = nametag ? `@${nametag}` : directAddress;
   const [schedules, setSchedules] = useState<any[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const load = () => fetch('/api/schedule').then(r => r.json()).then(data => {
-  setSchedules([...data].sort((a: any, b: any) => (b.createdAt ?? 0) - (a.createdAt ?? 0)));
+  const mine = data.filter((s: any) => s.funder === myId);
+  setSchedules([...mine].sort((a: any, b: any) => (b.createdAt ?? 0) - (a.createdAt ?? 0)));
 }).catch(() => {});
 
   useEffect(() => {
-    load();
-    const iv = setInterval(load, 10000);
-    return () => clearInterval(iv);
-  }, []);
+  load();
+  const iv = setInterval(load, 10000);
+  return () => clearInterval(iv);
+}, [myId]);
 
   const cancelJob = async (id: string) => {
     setLoadingId(id);
