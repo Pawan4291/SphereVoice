@@ -4,14 +4,14 @@ import { Calendar, Clock, X, Plus, Zap, CheckCircle2, XCircle, Loader2, RotateCc
 import { useWallet } from '../context/WalletContext';
 import ScheduleModal from './ScheduleModal';
 
-function formatAmount(raw: string, symbol = 'UCT'): string {
+function formatAmount(raw: string, symbol = 'UCT', decimals: number = 18): string {
   try {
     const n = BigInt(raw);
-    const divisor = 1_000_000_000_000_000_000n;
+    const divisor = 10n ** BigInt(decimals);
     const whole = n / divisor;
     const frac = n % divisor;
     if (frac === 0n) return `${whole.toLocaleString()} ${symbol}`;
-    return `${whole.toLocaleString()}.${frac.toString().padStart(18, '0').replace(/0+$/, '')} ${symbol}`;
+    return `${whole.toLocaleString()}.${frac.toString().padStart(decimals, '0').replace(/0+$/, '')} ${symbol}`;
   } catch {
     return `${raw} ${symbol}`;
   }
@@ -25,7 +25,7 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 export default function ScheduleTab() {
-  const { status, nametag, directAddress } = useWallet();
+  const { status, nametag, directAddress, assets } = useWallet();
   const myId = nametag ? `@${nametag}` : directAddress;
   const [schedules, setSchedules] = useState<any[]>([]);
   const [showForm, setShowForm] = useState(false);
@@ -124,7 +124,7 @@ export default function ScheduleTab() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-medium text-white font-mono">
-                        {formatAmount(s.amount, s.coinId)}
+                        {formatAmount(s.amount, s.coinId, assets.find((a: any) => a.symbol?.toUpperCase() === s.coinId?.toUpperCase())?.decimals ?? 18)}
                       </span>
                       <span className="text-xs text-gray-500">→</span>
                       <span className="text-sm text-orange-400">{s.to}</span>
@@ -171,7 +171,7 @@ export default function ScheduleTab() {
                     <CheckCircle2 className="w-4 h-4 text-green-400" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-400 font-mono">{formatAmount(s.amount, s.coinId)} → {s.to}</p>
+                    <p className="text-sm text-gray-400 font-mono">{formatAmount(s.amount, s.coinId, assets.find((a: any) => a.symbol?.toUpperCase() === s.coinId?.toUpperCase())?.decimals ?? 18)} → {s.to}</p>
                     <p className="text-xs text-gray-600">{s.cyclesDone} / {s.rule?.totalCycles} sent · tap for details</p>
                   </div>
                   <span className={`text-xs px-2 py-0.5 rounded-full ${STATUS_STYLES[s.status]}`}>{s.status}</span>
@@ -210,7 +210,7 @@ export default function ScheduleTab() {
                     <X className="w-4 h-4 text-gray-500" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-400 font-mono">{formatAmount(s.amount, s.coinId)} → {s.to}</p>
+                    <p className="text-sm text-gray-400 font-mono">{formatAmount(s.amount, s.coinId, assets.find((a: any) => a.symbol?.toUpperCase() === s.coinId?.toUpperCase())?.decimals ?? 18)} → {s.to}</p>
                     <p className="text-xs text-gray-600">
                       {(s.cyclesDone ?? 0)} / {s.rule?.totalCycles ?? 1} sent
                       {s.refunded ? ' · refunded' : ''} · tap for details
@@ -240,7 +240,7 @@ export default function ScheduleTab() {
                     {(!s.history || s.history.length === 0) && <p className="text-xs text-gray-600">No payments sent before cancellation</p>}
                     {s.refunded && (
                       <p className="text-xs text-yellow-400">
-                        Refunded {formatAmount(s.refundAmount ?? '0', s.coinId)} at {s.refundedAt ? new Date(s.refundedAt).toLocaleString() : 'unknown time'}
+                        Refunded {formatAmount(s.refundAmount ?? '0', s.coinId, assets.find((a: any) => a.symbol?.toUpperCase() === s.coinId?.toUpperCase())?.decimals ?? 18)} at {s.refundedAt ? new Date(s.refundedAt).toLocaleString() : 'unknown time'}
                         {s.refundTxId && <a href={`https://unicitynetwork.github.io/smt-explorer/?tx=${s.refundTxId}`} target="_blank" rel="noreferrer" className="text-orange-500 ml-1">↗</a>}
                       </p>
                     )}

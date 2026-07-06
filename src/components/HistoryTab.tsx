@@ -3,14 +3,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { RefreshCw, ArrowUpRight, ArrowDownLeft, Layers, ExternalLink, Loader2, Clock } from 'lucide-react';
 import { useWallet } from '../context/WalletContext';
 
-function formatAmount(raw: string, symbol = 'UCT'): string {
+function formatAmount(raw: string, symbol = 'UCT', decimals: number = 18): string {
   try {
     const n = BigInt(raw);
-    const DECIMALS = 1_000_000_000_000_000_000n; // 12 decimals
+    const DECIMALS = 10n ** BigInt(decimals);
     const whole = n / DECIMALS;
     const frac = n % DECIMALS;
     if (frac === 0n) return `${whole.toLocaleString()} ${symbol}`;
-    return `${whole.toLocaleString()}.${frac.toString().padStart(18, '0').replace(/0+$/, '')} ${symbol}`;
+    return `${whole.toLocaleString()}.${frac.toString().padStart(decimals, '0').replace(/0+$/, '')} ${symbol}`;
   } catch {
     return `${raw} ${symbol}`;
   }
@@ -25,7 +25,7 @@ function timeAgo(ts: number): string {
 }
 
 export default function HistoryTab() {
-  const { status, transfers, refreshHistory } = useWallet();
+  const { status, transfers, refreshHistory, assets } = useWallet();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -155,7 +155,7 @@ export default function HistoryTab() {
                     <p className={`text-sm font-bold font-mono ${
                       isMint ? 'text-blue-300' : isOut ? 'text-red-300' : 'text-green-300'
                     }`}>
-                      {isMint ? '+' : isOut ? '-' : '+'}{formatAmount(tx.amount, tx.symbol ?? tx.coinId)}
+                      {isMint ? '+' : isOut ? '-' : '+'}{formatAmount(tx.amount, tx.symbol ?? tx.coinId, assets.find((a: any) => a.symbol?.toUpperCase() === (tx.symbol ?? tx.coinId)?.toUpperCase())?.decimals ?? 18)}
                     </p>
                     <p className="text-xs text-gray-600">{timeAgo(tx.timestamp)}</p>
                     {smtLink && (
