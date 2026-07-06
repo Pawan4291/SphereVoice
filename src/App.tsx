@@ -219,12 +219,29 @@ function AnimatedWord({ words }: { words: string[] }) {
 }
 
 function AppShell() {
-  const [activeTab, setActiveTab] = useState<TabId>('chat');
-  const [showHero, setShowHero] = useState(true);
+  const [activeTab, setActiveTab] = useState<TabId>(() => {
+    try {
+      const saved = localStorage.getItem('spherevoice_activeTab');
+      return (saved as TabId) || 'chat';
+    } catch { return 'chat'; }
+  });
+  const [showHero, setShowHero] = useState(() => {
+    try {
+      return localStorage.getItem('spherevoice_showHero') !== 'false';
+    } catch { return true; }
+  });
   const { astridLog, scheduledPayments } = useWallet();
 
   const astridUnread = astridLog.filter(l => l.type === 'confirmed').length;
   const pendingSchedules = scheduledPayments.filter(p => p.status === 'pending').length;
+
+React.useEffect(() => {
+    try { localStorage.setItem('spherevoice_showHero', showHero ? 'true' : 'false'); } catch {}
+  }, [showHero]);
+
+  React.useEffect(() => {
+    try { localStorage.setItem('spherevoice_activeTab', activeTab); } catch {}
+  }, [activeTab]);
 
   if (showHero) {
     return (
