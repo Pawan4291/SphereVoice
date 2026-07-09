@@ -191,8 +191,8 @@ const MIN_INTERVAL_MS = 300000; // 5 minutes, matches cron-job.org's 60s polling
             <div>
               <label className="text-gray-500 text-xs">Repeat until</label>
               <div className="grid grid-cols-2 gap-2 mt-1">
-                <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)}
-                  max={new Date(new Date(startDate).getFullYear(), new Date(startDate).getMonth() + 1, 0).toISOString().slice(0, 10)}
+               <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)}
+                  max={new Date(Date.now() + 365 * 86400000).toISOString().slice(0, 10)}
                   className="bg-black/40 border border-orange-500/20 rounded-lg px-3 py-2 text-white text-sm [color-scheme:dark]" />
                 <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)}
                   className="bg-black/40 border border-orange-500/20 rounded-lg px-3 py-2 text-white text-sm [color-scheme:dark]" />
