@@ -51,7 +51,7 @@ function WalletStatusBar() {
           className={`w-2 h-2 rounded-full ${status === 'connected' ? 'bg-green-400' : status === 'connecting' ? 'bg-yellow-400' : status === 'error' ? 'bg-red-400' : 'bg-gray-600'}`} />
         <span className="text-xs text-gray-500 hidden sm:block font-mono cursor-default">
           {status === 'connected' ? (nametag ? `@${nametag}` : directAddress ? directAddress.slice(0,16)+'…' : 'Connected')
-            : status === 'connecting' ? 'Connecting…' : status === 'error' ? 'Error' : 'Disconnected'}
+            : status === 'connecting' ? 'Connecting…' : status === 'error' ? 'Not connected' : 'Disconnected'}
         </span>
 
         {status === 'connected' && hover && (
