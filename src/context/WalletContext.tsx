@@ -125,7 +125,9 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
       let client!: ConnectClient;
       let connection!: ConnectResult;
-      for (let i = 0; i < 3; i++) {
+      const maxAttempts = silentOnly ? 1 : 2;
+      const timeoutMs = silentOnly ? 2000 : 6000;
+      for (let i = 0; i < maxAttempts; i++) {
         try {
           const res = await Promise.race([
             autoConnect({
@@ -142,13 +144,13 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 'resolve:peer',
               ],
             }),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Connect timed out')), 8000)),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Connect timed out')), timeoutMs)),
           ]) as any;
           client = res.client;
           connection = res.connection;
           break;
         } catch (e) {
-          if (i === 2) throw e;
+          if (i === maxAttempts - 1) throw e;
           await new Promise(r => setTimeout(r, 1000 * (i + 1)));
         }
       }
