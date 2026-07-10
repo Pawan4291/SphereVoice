@@ -127,20 +127,23 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       let connection!: ConnectResult;
       for (let i = 0; i < 3; i++) {
         try {
-          const res = await autoConnect({
-            dapp: { name: 'SphereVoice', url: window.location.origin },
-            walletUrl: 'https://sphere.unicity.network',
-            network: SPHERE_NETWORKS.testnet2,
-           silent: silentOnly,
-            permissions: [
-  'identity:read',
-  'balance:read',
-  'history:read',
-  'transfer:request',
-  'mint:request',
-  'resolve:peer',
-],
-          });
+          const res = await Promise.race([
+            autoConnect({
+              dapp: { name: 'SphereVoice', url: window.location.origin },
+              walletUrl: 'https://sphere.unicity.network',
+              network: SPHERE_NETWORKS.testnet2,
+              silent: silentOnly,
+              permissions: [
+                'identity:read',
+                'balance:read',
+                'history:read',
+                'transfer:request',
+                'mint:request',
+                'resolve:peer',
+              ],
+            }),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Connect timed out')), 8000)),
+          ]) as any;
           client = res.client;
           connection = res.connection;
           break;
