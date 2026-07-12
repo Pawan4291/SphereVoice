@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useWallet } from '../context/WalletContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bot, CheckCircle2, XCircle, AlertCircle, Info, DollarSign, Shield, ExternalLink, Zap } from 'lucide-react';
 
@@ -33,12 +34,12 @@ function timeStr(ts: number): string {
   return new Date(ts).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
 
-function formatAmt(raw: string, symbol = 'UCT'): string {
+function formatAmt(raw: string, symbol = 'UCT', decimals: number = 18): string {
   try {
     const n = BigInt(raw);
-    const d = 1_000_000_000_000_000_000n;
+    const d = 10n ** BigInt(decimals);
     const w = n / d, f = n % d;
-    return f === 0n ? `${w} ${symbol}` : `${w}.${f.toString().padStart(18, '0').replace(/0+$/, '')} ${symbol}`;
+    return f === 0n ? `${w} ${symbol}` : `${w}.${f.toString().padStart(decimals, '0').replace(/0+$/, '')} ${symbol}`;
   } catch {
     return `${raw} ${symbol}`;
   }
@@ -54,6 +55,7 @@ interface LogEntry {
 }
 
 export default function AstridTab() {
+  const { assets } = useWallet();
   const [schedules, setSchedules] = useState<any[]>([]);
   const [activity, setActivity] = useState<any[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -73,7 +75,7 @@ export default function AstridTab() {
       id: `sched-${s.id}-${h.cycle ?? h.timestamp}`,
       timestamp: h.timestamp,
       type: h.status === 'failed' ? 'error' : 'confirmed',
-      message: `${h.status === 'failed' ? 'Failed scheduled send' : 'Scheduled send'} ${formatAmt(h.amount, s.coinId)} → ${s.to}`,
+      message: `${h.status === 'failed' ? 'Failed scheduled send' : 'Scheduled send'} ${formatAmt(h.amount, s.coinId, assets.find((a: any) => a.symbol?.toUpperCase() === s.coinId?.toUpperCase())?.decimals ?? 18)} → ${s.to}`,
       txId: h.txId,
       smtLink: h.txId ? `https://unicitynetwork.github.io/smt-explorer/?tx=${h.txId}` : undefined,
     }))
@@ -83,7 +85,7 @@ export default function AstridTab() {
     id: `act-${a.id}`,
     timestamp: a.timestamp,
     type: a.type === 'mint' ? 'sent' : 'confirmed',
-    message: `${a.type === 'mint' ? 'Minted' : 'Sent'} ${formatAmt(a.amount, a.coinId ?? 'UCT')}${a.to ? ` → ${a.to}` : ''}`,
+    message: `${a.type === 'mint' ? 'Minted' : 'Sent'} ${formatAmt(a.amount, a.coinId ?? 'UCT', assets.find((ast: any) => ast.symbol?.toUpperCase() === (a.coinId ?? 'UCT').toUpperCase())?.decimals ?? 18)}${a.to ? ` → ${a.to}` : ''}`,
     txId: a.txId,
     smtLink: a.txId ? `https://unicitynetwork.github.io/smt-explorer/?tx=${a.txId}` : undefined,
   }));
