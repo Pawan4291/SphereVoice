@@ -91,6 +91,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [scheduledPayments, setScheduledPayments] = useState<ScheduledPayment[]>([]);
   const [astridLog, setAstridLog] = useState<AstridLogEntry[]>([]);
   const sphereRef = useRef<any>(null);
+  const connectingRef = useRef(false);
   // keep executeScheduledPayment stable across renders
   const executeRef = useRef<((p: ScheduledPayment) => Promise<void>) | undefined>(undefined);
 
@@ -116,7 +117,9 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setError(null);
   }, []);
 
-  const connectWallet = useCallback(async (silentOnly = false) => {
+ const connectWallet = useCallback(async (silentOnly = false) => {
+    if (connectingRef.current) return;
+    connectingRef.current = true;
     setStatus('connecting');
     setError(null);
     try {
@@ -178,6 +181,8 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       const code = err?.code;
       setError(code ? `Connect failed (${code}): ${err.message}` : err?.message ?? 'Failed to connect wallet');
       console.error('Wallet connect error:', code, err);
+    } finally {
+      connectingRef.current = false;
     }
   }, [disconnectWallet]);
 
@@ -363,10 +368,7 @@ const hexCoinId = scheduledAsset?.coinId ?? KNOWN_COIN_IDS[payment.coinId?.toUpp
 
   // Keep ref updated
   executeRef.current = executeScheduledPayment;
-  React.useEffect(() => {
-    connectWallet(true).catch(() => setStatus('disconnected'));
-  }, []);
-
+  
   const cancelScheduled = useCallback((id: string) => {
     setScheduledPayments(prev => prev.map(p => p.id === id ? { ...p, status: 'cancelled' } : p));
   }, []);
