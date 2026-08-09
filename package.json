@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@unicitylabs/sphere-sdk": "^0.12.0",
+    "@unicitylabs/sphere-sdk": "^0.14.2",
     "@unicitylabs/state-transition-sdk": "2.0.0-rc.68bc1e5",
     "@upstash/redis": "^1.34.0",
     "clsx": "2.1.1",
@@ -23,7 +23,7 @@
   },
   "devDependencies": {
     "@tailwindcss/vite": "4.1.17",
-    "@types/node": "^22.20.0",
+    "@types/node": "^22.20.1",
     "@types/react": "19.2.7",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "5.1.1",
