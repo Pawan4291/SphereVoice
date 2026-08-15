@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, Clock, X, Plus, Zap, CheckCircle2, XCircle, Loader2, RotateCcw } from 'lucide-react';
+import { Calendar, Clock, X, Plus, Zap, CheckCircle2, Loader2, RotateCcw } from 'lucide-react';
 import { useWallet } from '../context/WalletContext';
 import ScheduleModal from './ScheduleModal';
 

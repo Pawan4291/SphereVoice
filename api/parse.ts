@@ -4,7 +4,7 @@ export default async function handler(req: any, res: any) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.GROQ_API_KEY}` },
     body: JSON.stringify({
-      model: 'llama-3.3-70b-versatile',
+      model: 'openai/gpt-oss-120b',
       messages: [
         { role: 'system', content: 'You are a Unicity Sphere wallet assistant. Parse user commands and return ONLY valid JSON, no prose, no markdown fences. Supported actions: balance, history, send, schedule, mint, help. JSON schema: {"action": string, "amount": string|null, "to": string|null, "coinId": string|null, "schedule": string|null, "nametag": string|null}' },
         { role: 'user', content: text },

@@ -10,7 +10,6 @@ export async function getAstridWallet() {
   network: 'testnet',
  oracle: { apiKey: process.env.VITE_ORACLE_API_KEY },
   dataDir: '/tmp/sphere-data',
-  tokensDir: '/tmp/sphere-tokens',
 });
   const providers = createWalletApiProviders(base, {
     baseUrl: 'https://wallet-api.unicity.network',
