@@ -187,10 +187,11 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [disconnectWallet]);
 
   const refreshBalance = useCallback(async () => {
-    if (!sphereRef.current) throw new Error('Wallet not connected');
-    const a = await sphereRef.current.query('sphere_getAssets');
-    setAssets((a as any) ?? []);
-  }, []);
+  if (!sphereRef.current) throw new Error('Wallet not connected');
+  const a = await sphereRef.current.query('sphere_getAssets');
+  console.log('ASSET COINIDS:', (a as any)?.map((x: any) => `${x.symbol}: ${x.coinId}`));
+  setAssets((a as any) ?? []);
+}, []);
 
   const refreshHistory = useCallback(async () => {
   if (!sphereRef.current) throw new Error('Wallet not connected');

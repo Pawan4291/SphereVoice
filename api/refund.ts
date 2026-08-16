@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { getAstridWallet } from './_astrid.js';
+import { getAstridWallet, resolveCoinId } from './_astrid.js';
 const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_KEY!);
 
 export default async function handler(req: any, res: any) {
@@ -13,7 +13,7 @@ export default async function handler(req: any, res: any) {
   let result;
   try {
     const sphere = await getAstridWallet();
-    result = await sphere.payments.send({ recipient: s.funder, amount: remaining, coinId: s.coinId });
+    result = await sphere.payments.send({ recipient: s.funder, amount: remaining, coinId: resolveCoinId(s.coinId) });
   } catch (err: any) {
     console.error('Refund send failed:', err);
     return res.status(500).json({ error: err?.message ?? 'send failed', code: err?.code });

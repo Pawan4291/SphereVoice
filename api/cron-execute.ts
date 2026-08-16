@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { getAstridWallet } from './_astrid.js';
+import { getAstridWallet, resolveCoinId } from './_astrid.js';
 
 const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_KEY!);
 
@@ -29,7 +29,7 @@ const schedules = schedulesRaw ?? [];
     console.log('CHECK', s.id, 'status:', s.status, 'cyclesDone:', s.cyclesDone, 'lastRun:', s.lastRun, 'now:', Date.now(), 'diff:', s.lastRun ? Date.now() - s.lastRun : null, 'intervalMs:', s.rule?.intervalMs, 'due:', due);
     if (!due) continue;
     try {
-      const result = await sphere.payments.send({ recipient: s.to, amount: s.amount, coinId: s.coinId });
+      const result = await sphere.payments.send({ recipient: s.to, amount: s.amount, coinId: resolveCoinId(s.coinId) });
       s.cyclesDone = (s.cyclesDone ?? 0) + 1;
       s.lastRun = Date.now();
       s.lastResult = result.status;

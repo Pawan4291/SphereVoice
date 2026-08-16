@@ -4,6 +4,13 @@ import { createWalletApiProviders } from '@unicitylabs/sphere-sdk/impl/shared/wa
 
 let cachedSphere: any = null;
 
+const KNOWN_COIN_IDS: Record<string, string> = {
+  UCT: 'f581d30f593e4b369d684a4563b5246f07b1d265f7178a2c0a82b81f39c24dc0',
+};
+export function resolveCoinId(coinId: string): string {
+  return KNOWN_COIN_IDS[coinId?.toUpperCase()] ?? coinId;
+}
+
 export async function getAstridWallet() {
   if (cachedSphere) return cachedSphere;
   const base = createNodeProviders({
