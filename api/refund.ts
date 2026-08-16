@@ -1,12 +1,11 @@
-import { Redis } from '@upstash/redis';
+import { createClient } from '@supabase/supabase-js';
 import { getAstridWallet } from './_astrid.js';
-const redis = new Redis({ url: process.env.KV_REST_API_URL!, token: process.env.KV_REST_API_TOKEN! });
+const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_KEY!);
 
 export default async function handler(req: any, res: any) {
   const { id } = req.body ?? {};
   if (!id) return res.status(400).json({ error: 'Missing id' });
-  const raw = await redis.hget('schedules', id);
-  const s: any = typeof raw === 'string' ? JSON.parse(raw) : raw;
+  const { data: s } = await supabase.from('schedules').select('*').eq('id', id).single();
   if (!s || s.refunded) return res.status(400).json({ error: 'invalid or already refunded' });
   const remainingCycles = (s.rule.totalCycles ?? 1) - (s.cyclesDone ?? 0);
   if (remainingCycles <= 0) return res.status(400).json({ error: 'nothing left to refund' });
@@ -24,6 +23,6 @@ export default async function handler(req: any, res: any) {
   s.refundedAt = Date.now();
 s.refundAmount = remaining;
 s.refundTxId = result.transferId ?? result.id;
-  await redis.hset('schedules', { [id]: JSON.stringify(s) });
+  await supabase.from('schedules').update(s).eq('id', id);
   res.status(200).json({ status: result.status, refunded: remaining });
 }

@@ -1,7 +1,7 @@
-import { Redis } from '@upstash/redis';
+import { createClient } from '@supabase/supabase-js';
 import { getAstridWallet } from './_astrid.js';
 
-const redis = new Redis({ url: process.env.KV_REST_API_URL!, token: process.env.KV_REST_API_TOKEN! });
+const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_KEY!);
 
 function isDueNow(rule: any, cyclesDone: number, lastRun: number | undefined) {
   if (rule.type === 'recurring') {
@@ -16,8 +16,8 @@ function isDueNow(rule: any, cyclesDone: number, lastRun: number | undefined) {
 export default async function handler(req: any, res: any) {
   if (req.headers.authorization !== `Bearer ${process.env.CRON_SECRET}`) return res.status(401).end();
 
-  const all = (await redis.hgetall('schedules')) as Record<string, string> | null;
-  const schedules = all ? Object.entries(all).map(([id, v]: [string, any]) => ({ id, ...(typeof v === 'string' ? JSON.parse(v) : v) })) : [];
+  const { data: schedulesRaw } = await supabase.from('schedules').select('*');
+const schedules = schedulesRaw ?? [];
   console.log('CRON RUN: found', schedules.length, 'schedules', JSON.stringify(schedules));
 
   const sphere = await getAstridWallet();
@@ -41,7 +41,7 @@ s.history.push({ cycle: s.cyclesDone, timestamp: Date.now(), amount: s.amount, s
       s.lastError = e?.message ?? 'unknown error';
       results.push({ id: s.id, status: 'failed', error: s.lastError });
     }
-    await redis.hset('schedules', { [s.id]: JSON.stringify(s) });
+    await supabase.from('schedules').update(s).eq('id', s.id);
   }
   return res.status(200).json({ checked: schedules.length, results });
 }
