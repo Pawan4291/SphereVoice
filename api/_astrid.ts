@@ -7,7 +7,7 @@ let cachedSphere: any = null;
 export async function getAstridWallet() {
   if (cachedSphere) return cachedSphere;
   const base = createNodeProviders({
-  network: 'testnet',
+  network: 'testnet2',
  oracle: { apiKey: process.env.VITE_ORACLE_API_KEY },
   dataDir: '/tmp/sphere-data',
 });
@@ -18,7 +18,7 @@ export async function getAstridWallet() {
   });
   const { sphere } = await Sphere.init({
   ...providers,
-  network: 'testnet',
+  network: 'testnet2',
   mnemonic: process.env.ASTRID_MNEMONIC,
 });
  console.log('[Astrid Debug] trustBase:', !!sphere.getAggregator().getTrustBaseJson?.(), 'url:', sphere.getAggregator().getAggregatorUrl?.(), 'apiKey:', !!sphere.getAggregator().getApiKey?.());
